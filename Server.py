@@ -2,10 +2,9 @@ import subprocess
 from DAO import connect
 
 #conn = connect(host='172.25.0.3', port=27017, user='root', passw='abebox')
-conn = connect(host='172.25.0.3', port=27017, user='admin', passw='admin', authDB='users')
-print('Trying connecting MongoDB...\n', conn)
 try:
-    conn.server_info()
+    print('Trying connecting ABEbox DB...\n')
+    conn = connect(host='172.25.0.3:3307', user='root', passw='abebox')
 except:
     print('[ERROR] Connection failed!')
     exit()

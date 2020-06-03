@@ -7,7 +7,7 @@ services:
                 container_name: abebox_db
                 restart: always
                 ports:
-                        - "3306:3306"
+                        - "3307:3306"
                 environment:
                         MYSQL_DATABASE: abebox
                         MYSQL_ROOT_USER: root

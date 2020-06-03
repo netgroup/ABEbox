@@ -1,0 +1,57 @@
+FROM python:3.7-slim
+
+# Install necessary system and Python libraries
+WORKDIR /ABEbox/lib
+COPY requirements.txt ./
+RUN apt-get update && apt-get upgrade -y
+RUN apt-get install -y python-pip m4 libglib2.0 libglib2.0-dev libssl-dev wget flex bison
+RUN pip install -r requirements.txt
+
+# Download GMP, PBC and CP-ABE libraries
+RUN wget https://gmplib.org/download/gmp/gmp-6.2.0.tar.xz
+RUN wget https://crypto.stanford.edu/pbc/files/pbc-0.5.14.tar.gz
+RUN wget http://acsc.cs.utexas.edu/cpabe/libbswabe-0.9.tar.gz
+RUN wget http://acsc.cs.utexas.edu/cpabe/cpabe-0.11.tar.gz
+
+# Install the libraries in specific directories
+ENV LIBRARY_PATH=$LIBRARY_PATH:/usr/local/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
+# Install GMP library
+WORKDIR /ABEbox/lib/GmpPbc
+RUN mv /ABEbox/lib/gmp-6.2.0.tar.xz ./
+RUN mv /ABEbox/lib/pbc-0.5.14.tar.gz ./
+RUN tar xf gmp-6.2.0.tar.xz
+RUN tar xf pbc-0.5.14.tar.gz
+WORKDIR /ABEbox/lib/GmpPbc/gmp-6.2.0
+RUN ./configure
+RUN make
+RUN make install
+RUN make check
+
+# Install PBC library
+WORKDIR /ABEbox/lib/GmpPbc/pbc-0.5.14
+RUN ./configure
+RUN make
+RUN make install
+
+# Install CP-ABE libraries
+WORKDIR /ABEbox/lib
+RUN tar xf libbswabe-0.9.tar.gz
+RUN tar xf cpabe-0.11.tar.gz
+WORKDIR /ABEbox/lib/libbswabe-0.9
+RUN ./configure
+RUN make
+RUN make install
+WORKDIR /ABEbox/lib/cpabe-0.11
+COPY policy_lang.y ./
+RUN ./configure -with-pbc-include=/usr/local/include/pbc -with-pbc-lib=/usr/local/lib # The paths where pbc.h and libpbc were installed
+RUN make LDFLAGS="-lgmp -lpbc -lcrypto -L/usr/lib/x86_64-linux-gnu -lglib-2.0 -lbswabe -lgmp"
+RUN make install
+
+# Install application
+WORKDIR /ABEbox/app
+COPY Const.py ./
+COPY DAO.py ./
+COPY Server.py ./
+CMD ["python3", "Server.py"]

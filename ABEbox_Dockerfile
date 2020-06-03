@@ -7,11 +7,11 @@ RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y python-pip m4 libglib2.0 libglib2.0-dev libssl-dev wget flex bison
 RUN pip install -r requirements.txt
 
-# Download GMP, PBC and CP-ABE libraries
-RUN wget https://gmplib.org/download/gmp/gmp-6.2.0.tar.xz
-RUN wget https://crypto.stanford.edu/pbc/files/pbc-0.5.14.tar.gz
-RUN wget http://acsc.cs.utexas.edu/cpabe/libbswabe-0.9.tar.gz
-RUN wget http://acsc.cs.utexas.edu/cpabe/cpabe-0.11.tar.gz
+# Download GMP, PBC and CP-ABE libraries [NOTE: "--no-check-certificate" OPTION IS SET, USED ONLY FOR EXPERIMENTAL USE, NOT FOR REAL ONES]
+RUN wget --no-check-certificate https://gmplib.org/download/gmp/gmp-6.2.0.tar.xz
+RUN wget --no-check-certificate https://crypto.stanford.edu/pbc/files/pbc-0.5.14.tar.gz
+RUN wget --no-check-certificate http://acsc.cs.utexas.edu/cpabe/libbswabe-0.9.tar.gz
+RUN wget --no-check-certificate http://acsc.cs.utexas.edu/cpabe/cpabe-0.11.tar.gz
 
 # Install the libraries in specific directories
 ENV LIBRARY_PATH=$LIBRARY_PATH:/usr/local/lib

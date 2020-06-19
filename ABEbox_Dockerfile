@@ -5,7 +5,7 @@ WORKDIR /ABEbox/lib
 COPY requirements.txt ./
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y python-pip m4 libglib2.0 libglib2.0-dev libssl-dev wget flex bison
-RUN pip install -r requirements.txt
+RUN pip install -r requirements
 
 # Download GMP, PBC and CP-ABE libraries [NOTE: "--no-check-certificate" OPTION IS SET, USED ONLY FOR EXPERIMENTAL USE, NOT FOR REAL ONES]
 RUN wget --no-check-certificate https://gmplib.org/download/gmp/gmp-6.2.0.tar.xz

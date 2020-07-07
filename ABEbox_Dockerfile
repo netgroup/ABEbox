@@ -58,4 +58,5 @@ COPY Log.py ./
 COPY Main.py ./
 COPY README.md ./
 COPY test_file.txt ./
-CMD ["python3", "Main.py"]
+#CMD ["python3", "Main.py"]
+CMD ["/bin/bash"]

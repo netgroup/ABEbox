@@ -2,7 +2,7 @@ FROM python:3.7-slim
 
 # Install necessary system and Python libraries
 WORKDIR /ABEbox/lib
-COPY requirements.txt ./
+COPY requirements ./
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y python-pip m4 libglib2.0 libglib2.0-dev libssl-dev wget flex bison
 RUN pip install -r requirements
@@ -51,7 +51,11 @@ RUN make install
 
 # Install application
 WORKDIR /ABEbox/app
+COPY CipherPrimitives.py ./
 COPY Const.py ./
 COPY DAO.py ./
-COPY Server.py ./
-CMD ["python3", "Server.py"]
+COPY Log.py ./
+COPY Main.py ./
+COPY README.md ./
+COPY test_file.txt ./
+CMD ["python3", "Main.py"]

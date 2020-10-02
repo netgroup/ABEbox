@@ -2,6 +2,7 @@
 # cpabe and libbswabe of John Bethencourt, Amit Sahai and Brent Waters. Full details about their libraries can be found
 # at the following link http://acsc.cs.utexas.edu/cpabe/.
 
+from Const import ABE_PK_FILE, ABE_MSK_FILE, ABE_SK_FILE
 from Log import log
 
 import os.path
@@ -53,7 +54,7 @@ def setup(pk_outfile=None, msk_outfile=None, debug=0):
 # - msk_file = file where master secret key is stored
 # - attr_list = list of attributes related to the secret key that will be generated
 # - debug = if 1, prints will be shown during execution; default 0, no prints are shown
-def keygen(sk_outfile=None, pk_file='pub_key', msk_file='master_key', attr_list=None, debug=0):
+def keygen(sk_outfile=None, pk_file=ABE_PK_FILE, msk_file=ABE_MSK_FILE, attr_list=None, debug=0):
 
     # Verify correctness of parameters
     if attr_list is None or not os.path.isfile(pk_file) or not os.path.isfile(msk_file):
@@ -93,7 +94,7 @@ def keygen(sk_outfile=None, pk_file='pub_key', msk_file='master_key', attr_list=
 # - plaintext_file = file to encrypt
 # - policy = policy related to the file
 # - debug = if 1, prints will be shown during execution; default 0, no prints are shown
-def encrypt(enc_outfile=None, pk_file='pub_key', plaintext_file=None, policy=None, debug=0):
+def encrypt(enc_outfile=None, pk_file=ABE_PK_FILE, plaintext_file=None, policy=None, debug=0):
 
     # Verify correctness of parameters
     if plaintext_file is None or policy is None or not os.path.isfile(pk_file):
@@ -104,12 +105,13 @@ def encrypt(enc_outfile=None, pk_file='pub_key', plaintext_file=None, policy=Non
 
     # Create bash command to execute
     bash_command = 'cpabe-enc'
+
     if enc_outfile is not None:
         bash_command += ' -o ' + enc_outfile
-    print(policy)
-    bash_command += ' ' + pk_file + ' ' + plaintext_file + ' ' + policy
-    log('Encrypt command = ' + bash_command)
 
+    bash_command += ' ' + pk_file + ' ' + plaintext_file + ' ' + policy
+
+    log('Encrypt command = ' + bash_command)
     if debug:   # ONLY USE FOR DEBUG
         print('Encrypt command = ' + bash_command)
 
@@ -133,7 +135,7 @@ def encrypt(enc_outfile=None, pk_file='pub_key', plaintext_file=None, policy=Non
 # - sk_file = file where private key is stored
 # - ciphertext_file = file to decrypt
 # - debug = if 1, prints will be shown during execution; default 0, no prints are shown
-def decrypt(dec_outfile=None, pk_file='pub_key', sk_file='priv_key', ciphertext_file=None, debug=0):
+def decrypt(dec_outfile=None, pk_file=ABE_PK_FILE, sk_file=ABE_SK_FILE, ciphertext_file=None, debug=0):
 
     # Verify correctness of parameters
     if ciphertext_file is None or not os.path.isfile(pk_file) or not os.path.isfile(sk_file):

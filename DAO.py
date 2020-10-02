@@ -6,10 +6,10 @@ import mysql.connector as sql
 # - host = DB address (it can also contains the port)
 # - user = user for authentication
 # - passw = password for authentication
-def connect(host=None, user=None, passw=None):
+def connect(host='', user='', passw=''):
 
     # Verify correctness of parameters
-    if host is None or user is None or passw is None:
+    if host == '' or user == '' or passw == '':
         raise Exception
 
     # Execute connection

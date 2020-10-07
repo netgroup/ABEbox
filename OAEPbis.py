@@ -9,7 +9,7 @@ k0BitsFill = AONT_DEFAULT_K0_FILL
 encoding = AONT_DEFAULT_ENCODING
 
 
-def init(n, enc, k0, k0fill):
+def init(n=AONT_DEFAULT_N, enc=AONT_DEFAULT_ENCODING, k0=AONT_DEFAULT_K0, k0fill=AONT_DEFAULT_K0_FILL):
 
 	global nBits, k0BitsInt, k0BitsFill, encoding
 	nBits = n
@@ -30,12 +30,12 @@ def hex_to_binary(msg, debug=0):
 
 def binary_to_hex(bits, debug=0):
 
-	n = int(bits, 2)
+	n = hex(int(bits, 2))
 
 	if debug:
 		print('Converting binary = (%d) %s to msg = (%d) %s' % (len(bits), bits, len(n), n))
 
-	return hex(n)
+	return n
 
 
 def pad(msg, debug=0):
@@ -103,6 +103,10 @@ def unpad(msg, debug=0):
 
 	x = msg[0: nBits - k0BitsInt]
 	y = msg[nBits - k0BitsInt:]
+
+	if debug:
+		print('X = (%d) %s' % (len(x), x))
+		print('Y = (%d) %s' % (len(y), y))
 
 	oracle2.update(x.encode(encoding))
 	r = format(int(y, 2) ^ int(oracle2.hexdigest(), 16), k0BitsFill)

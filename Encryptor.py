@@ -43,8 +43,13 @@ def create_encrypted_file(plaintext_infile=None, ciphertext_outfile=None, pk_fil
     if debug:  # ONLY USE FOR DEBUG
         print('[ENCRYPTOR] SYM KEY = (%d) %s' % (len(sym_key), sym_key))
 
+    from SymEncPrimitives import generate_iv
+
+    # Create the IV for  symmetric encryption
+    iv = generate_iv()
+
     # Encrypt the plaintext using symmetric encryption with the given key
-    iv, ciphertext, tag = sym_encrypt(key=sym_key, plaintext=data_to_enc, debug=debug)
+    ciphertext, tag = sym_encrypt(key=sym_key, iv=iv, plaintext=data_to_enc, debug=debug)
 
     if debug:  # ONLY USE FOR DEBUG
         print('\n[ENCRYPTOR] ENCRYPTION RESULTS:')
@@ -53,7 +58,7 @@ def create_encrypted_file(plaintext_infile=None, ciphertext_outfile=None, pk_fil
         print('[ENCRYPTOR]\tTAG = (%s) (%d) %s -> %s' % (type(tag), len(tag), tag, hexlify(tag).decode()))
 
     # Apply All-or-Nothing Transformation to the ciphertext
-    ciphertext_block_lengths, transf_ciphertext = apply_aont(hexlify(ciphertext).decode(), debug=debug)
+    transf_ciphertext, n, k0, leading_zeros = apply_aont(hexlify(ciphertext).decode(), debug=debug)
 
     if debug:  # ONLY USE FOR DEBUG
         print('\n[ENCRYPTOR] TRANSFORMED CIPHERTEXT =', transf_ciphertext)
@@ -68,8 +73,14 @@ def create_encrypted_file(plaintext_infile=None, ciphertext_outfile=None, pk_fil
     if ciphertext_outfile is None:
         ciphertext_outfile = 'enc_' + plaintext_infile
 
+    # Protection scheme version
+    version = 1
+
+    # Put together all data to write
+    data_to_write = [version, n, k0, len(enc_key), enc_key, iv, tag, len(ciphertext), leading_zeros, transf_ciphertext]
+
     # Write data on output file
-    write_data_on_file(ciphertext_outfile, enc_key, iv, tag, ciphertext_block_lengths, transf_ciphertext, debug)
+    write_data_on_file(ciphertext_outfile, data_to_write, debug)
 
 
 def apply_aont(message=None, n=AONT_DEFAULT_N, encoding=AONT_DEFAULT_ENCODING, k0=AONT_DEFAULT_K0,
@@ -88,15 +99,19 @@ def apply_aont(message=None, n=AONT_DEFAULT_N, encoding=AONT_DEFAULT_ENCODING, k
         print('CIPHERTEXT HEX = (%d) %s' % (len(message), message))
 
     # Initialise variables
-    ciphertext_block_lengths = []
     transformed_ciphertext = ''
+    leading_zeros = 0
 
     # Divide message in blocks to perform the transformation
-    step = int(n / 4)
+    step = int((n - k0) / 4)
     for i in range(0, len(message), step):
-        next_i = (i + 1) * step
+
+        # Compute next block starting point
+        next_i = i + step
         if next_i > len(message):
             next_i = len(message)
+
+        # Get a block of fixed length from message
         to_transform = message[i: next_i]
 
         if debug:  # ONLY USE FOR DEBUG
@@ -113,39 +128,49 @@ def apply_aont(message=None, n=AONT_DEFAULT_N, encoding=AONT_DEFAULT_ENCODING, k
         if debug:  # ONLY USE FOR DEBUG
             print('TRANSFORMED CIPHERTEXT BLOCK = (%d) %s' % (len(transformed_ciphertext_block),
                                                               transformed_ciphertext_block))
+
+        # Compute leading zeros
+        leading_zeros = len(transformed_ciphertext_block) // 4 - len(hex(int(transformed_ciphertext_block, 2))[2:])
+
         # Convert transformed ciphertext to hex
-        transformed_ciphertext_block_hex = hex(int(transformed_ciphertext_block, 2))[2:]
+        transformed_ciphertext_block_hex = hex(int(transformed_ciphertext_block, 2))[2:]\
+            .zfill(len(transformed_ciphertext_block) // 4)
 
         if debug:  # ONLY USE FOR DEBUG
+            print('LEADING ZEROS = %d' % leading_zeros)
             print('TRANSFORMED CIPHERTEXT BLOCK HEX = (%d) %s' % (len(transformed_ciphertext_block_hex),
                                                                   transformed_ciphertext_block_hex))
-        # Get the transformed ciphertext hex length
-        ciphertext_length = len(to_transform)
-
-        # Convert transformed ciphertext to binary
-        transformed_ciphertext_block_bits = bin(int(transformed_ciphertext_block_hex, 16))[2:]
-
-        if debug:  # ONLY USE FOR DEBUG
-            print('TRANSFORMED CIPHERTEXT BLOCK BITS = (%d) %s' % (len(transformed_ciphertext_block_bits),
-                                                                   transformed_ciphertext_block_bits))
-        # leading_zeros = 0
-
-        # Check if leading zeros have been cut: if yes, prepend the to the transformed ciphertext block bits
-        if len(transformed_ciphertext_block_bits) % 8 != 0:
-            # leading_zeros = 8 * int((len(transformed_ciphertext_block) + 7) / 8) - len(transformed_ciphertext_block)
-            transformed_ciphertext_block_bits = transformed_ciphertext_block_bits.zfill(
-                8 * int((len(transformed_ciphertext_block_bits) + 7) / 8))
-
-        # print('LEADING ZEROS = ', leading_zeros)
-
-        if debug:  # ONLY USE FOR DEBUG
-            print('TRANSFORMED CIPHERTEXT BLOCK BITS WITH 0s = (%d) %s' % (len(transformed_ciphertext_block_bits),
-                                                                           transformed_ciphertext_block_bits))
+        # # Get the transformed ciphertext hex length
+        # ciphertext_length = len(to_transform)
+        #
+        # # Convert transformed ciphertext to binary
+        # transformed_ciphertext_block_bits = bin(int(transformed_ciphertext_block_hex, 16))[2:]
+        #
+        # if debug:  # ONLY USE FOR DEBUG
+        #     print('TRANSFORMED CIPHERTEXT BLOCK BITS = (%d) %s' % (len(transformed_ciphertext_block_bits),
+        #                                                            transformed_ciphertext_block_bits))
+        # # leading_zeros = 0
+        #
+        # # Check if leading zeros have been cut: if yes, prepend the to the transformed ciphertext block bits
+        # if len(transformed_ciphertext_block_bits) % 8 != 0:
+        #     # leading_zeros = 8 * int((len(transformed_ciphertext_block) + 7) / 8) - len(transformed_ciphertext_block)
+        #     transformed_ciphertext_block_bits = transformed_ciphertext_block_bits.zfill(
+        #         8 * int((len(transformed_ciphertext_block_bits) + 7) / 8))
+        #
+        # # print('LEADING ZEROS = ', leading_zeros)
+        #
+        # if debug:  # ONLY USE FOR DEBUG
+        #     print('TRANSFORMED CIPHERTEXT BLOCK BITS WITH 0s = (%d) %s' % (len(transformed_ciphertext_block_bits),
+        #                                                                    transformed_ciphertext_block_bits))
 
         transformed_ciphertext += transformed_ciphertext_block_hex
-        ciphertext_block_lengths.append(ciphertext_length)
 
-    return ciphertext_block_lengths, bytes.fromhex(transformed_ciphertext)
+    if debug:  # ONLY USE FOR DEBUG
+        print('TRANSFORMED CIPHERTEXT = (%d) %s' % (len(transformed_ciphertext), transformed_ciphertext))
+
+    from binascii import unhexlify
+
+    return unhexlify(transformed_ciphertext), n, k0, leading_zeros
 
 
 def encrypt_sym_key(key=None, pk_file=None, policy=None, debug=0):
@@ -200,24 +225,34 @@ def encrypt_sym_key(key=None, pk_file=None, policy=None, debug=0):
     return enc_key
 
 
-def write_data_on_file(ciphertext_outfile, enc_key, iv, tag, ciphertext_block_lengths, transf_ciphertext,
-                       debug=0):
+def write_data_on_file(ciphertext_outfile, data, debug=0):
 
-    # Create all parameters to write in the given file
-    enc_key_length = len(enc_key)
-    transf_ciphertext_block_num = len(ciphertext_block_lengths)
+    # Create values to write on file
+    version = data[0]
+    n = data[1]
+    k0 = data[2]
+    re_enc_num = 43
+    enc_key_length = data[3]
+    enc_key = data[4]
+    iv = data[5]
+    tag = data[6]
+    ciphertext_length = data[7]
+    leading_zeros = data[8]
+    transf_ciphertext = data[9]
 
     if debug:  # ONLY USE FOR DEBUG
-        print('ENC SYM KEY = (%d) %s' % (len(enc_key), enc_key))
+        print('VERSION = %d' % version)
+        print('N = %d' % n)
+        print('K0 = %d' % k0)
+        print('ENC SYM KEY = (%d) %s' % (enc_key_length, enc_key))
         print('IV = (%d) %s' % (len(iv), iv))
         print('TAG = (%d) %s' % (len(tag), tag))
-        print('TRANSFORMED CIPHERTEXT BLOCK NUM =', transf_ciphertext_block_num)
-        print('CIPHERTEXT BLOCK LENGTHS =', ciphertext_block_lengths)
+        print('CIPHERTEXT LENGTH = %d' % ciphertext_length)
+        print('LEADING ZEROS = %d' % leading_zeros)
         print('TRANSFORMED CIPHERTEXT = (%d) %s' % (len(transf_ciphertext), transf_ciphertext))
 
     # Create string format for struct
-    struct_format = 'H%ds%ds%dsH' % (enc_key_length, len(iv), len(tag)) + transf_ciphertext_block_num * 'H' + \
-                    '%ds' % len(transf_ciphertext)
+    struct_format = 'BHHH%ds%ds%dsQH%dsH' % (enc_key_length, len(iv), len(tag), len(transf_ciphertext))
 
     if debug:
         print('STRING FORMAT FOR STRUCT = ', struct_format)
@@ -225,31 +260,85 @@ def write_data_on_file(ciphertext_outfile, enc_key, iv, tag, ciphertext_block_le
     import struct
 
     # Create struct with all data
-    data_to_write = struct.pack(struct_format, enc_key_length, enc_key, iv, tag, transf_ciphertext_block_num,
-                                *ciphertext_block_lengths, transf_ciphertext)
+    data_to_write = struct.pack(struct_format, version, n, k0, enc_key_length, enc_key, iv, tag,
+                                ciphertext_length, leading_zeros, transf_ciphertext, re_enc_num)
 
     if debug:  # ONLY USE FOR DEBUG
-        print('DATA TO WRITE ON FILE =', data_to_write)
+        print('DATA TO WRITE ON FILE = (%d) %s' % (len(data_to_write), data_to_write))
 
     from FunctionUtils import write_bytes_on_file
 
     # Write data bytes on given outfile
     write_bytes_on_file(ciphertext_outfile, data_to_write, debug)
 
-    with(open(ciphertext_outfile, 'rb')) as fin:
+    # with(open(ciphertext_outfile, 'rb')) as fin:
+    #
+    #    from Const import B, H, Q, IV_DEFAULT_SIZE
 
-        from Const import H, IV_TAG, AONT_DEFAULT_N
+    #     print(fin.read(1))
+    #     print(fin.read(1))
+    #     print(fin.read(1))
+    #     print(fin.read(1))
 
-        l = struct.unpack('H', fin.read(H))[0]
-        enc_key, iv, tag, block_num = struct.unpack('%ds%ds%dsH' % (l, IV_TAG, IV_TAG),
-                                                                      fin.read(l + IV_TAG + IV_TAG + H + 1))
 
-        block_lengths, cipher = struct.unpack('%dH%ds' % (block_num, block_num * int(AONT_DEFAULT_N / 8)), fin.read(block_num * H + block_num * int(AONT_DEFAULT_N / 8)))
-        print('l =', l)
-        print('enc_key =', enc_key)
-        print('iv =', iv)
-        print('tag = (%s) %s' % (type(tag), tag))
-        print('block_num =', block_num)
-        print('block_lengths =', block_lengths)
-        print('ciphertext_tuple =', cipher)
-        print('ciphertext compare =', cipher == transf_ciphertext)
+    #     print('TELL', fin.tell())
+    #     fin.seek(B + B, 1)
+    #     print('TELL', fin.tell())
+    #     n1, k01, enc_key_length1 = struct.unpack('HHH', fin.read(3 * H))
+    #
+    #     print('READ N = %d' % n1)
+    #     print('READ K0 = %d' % k01)
+    #     print('READ ENC SYM KEY LEN = %d' % enc_key_length1)
+    #
+    #     print('TELL', fin.tell())
+    #     enc_key1, iv1, tag1, ciphertext_length1 = \
+    #         struct.unpack('%ds%ds%dsQ' % (enc_key_length1, IV_DEFAULT_SIZE, IV_DEFAULT_SIZE),
+    #                       fin.read(enc_key_length1 + IV_DEFAULT_SIZE + IV_DEFAULT_SIZE + Q + 5))
+    #
+    #     transf_ciphertext_length = int((int(ciphertext_length1 * 8 / (n - k0)) + 1) * n / 8)
+    #
+    #     if debug:
+    #         print('TRANSFORMED CIPHERTEXT LENGTH = %d' % transf_ciphertext_length)
+    #
+    #     ciphertext_offset = fin.tell()
+    #
+    #     if debug:  # ONLY USE FOR DEBUG
+    #         print('CIPHERTEXT OFFSET = %d' % ciphertext_offset)
+    #
+    #     transf_ciphertext1, re_enc_num1 = struct.unpack('%dsH' % transf_ciphertext_length,
+    #                                                     fin.read(transf_ciphertext_length + H))
+    #
+    #     if debug:  # ONLY USE FOR DEBUG
+    #         #print('READ VERSION = %d' % version1)
+    #         print('READ N = %d' % n1)
+    #         print('READ K0 = %d' % k01)
+    #         print('READ RE-ENC NUM = %d' % re_enc_num1)
+    #         print('READ ENC SYM KEY = (%d) %s' % (enc_key_length1, enc_key1))
+    #         print('READ IV = (%d) %s' % (len(iv1), iv1))
+    #         print('READ TAG = (%d) %s' % (len(tag1), tag1))
+    #         print('READ CIPHERTEXT LENGTH = %d' % ciphertext_length1)
+    #         print('READ TRANSFORMED CIPHERTEXT = (%d) %s' % (len(transf_ciphertext1), transf_ciphertext1))
+    #
+    #     fin.seek(0)
+    #     fin.seek(2 * B)
+    #     n, k0, enc_key_length = struct.unpack('HHH', fin.read(3 * H))
+    # #
+    #     print('\n\n\nOFFSET\nREAD N = %d' % n)
+    #     print('READ K0 = %d' % k0)
+    #     print('READ ENC SYM KEY = %d' % enc_key_length)
+    # #
+    #     fin.seek(enc_key_length + IV_DEFAULT_SIZE * 2 + 5, 1)
+    #     ciphertext_length = struct.unpack('Q', fin.read(Q))[0]
+    #     transf_ciphertext_length = int((int(ciphertext_length * 8 / (n - k0)) + 1) * n / 8)
+    # #
+    #     ciphertext_offset = fin.tell()
+    # #
+    #     if debug:  # ONLY USE FOR DEBUG
+    #         print('CIPHERTEXT OFFSET = %d' % ciphertext_offset)
+    # #
+    #     transf_ciphertext, re_enc_num = struct.unpack('%dsH' % transf_ciphertext_length, fin.read(transf_ciphertext_length + H))
+    #     print('READ TRANSFORMED CIPHERTEXT = (%d) %s' % (len(transf_ciphertext), transf_ciphertext))
+    # #
+    #     fin.seek(ciphertext_offset + len(transf_ciphertext))
+    #     re_enc_num = struct.unpack('H', fin.read(H))[0]
+    #     print('LAST READ RE-ENC NUM =', re_enc_num)

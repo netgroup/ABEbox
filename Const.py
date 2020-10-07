@@ -24,8 +24,9 @@ SEED_LENGTH = 32                        # 32 BYTES -> [WARNING] CARE WHEN MODIFY
 AONT_DEFAULT_N = 1024                   # BITS
 AONT_DEFAULT_K0 = 256                   # BITS
 AONT_DEFAULT_K0_FILL = '0' + str(AONT_DEFAULT_K0) + 'b'
-AONT_DEFAULT_ENCODING = 'utf-16'
+AONT_DEFAULT_ENCODING = 'utf-8'
 
 # STRUCT SIZES
-H = 2
-IV_TAG = 16
+B = 1                                   # 1 BYTE
+H = 2                                   # 2 BYTES
+Q = 8                                   # 8 BYTES

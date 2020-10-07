@@ -41,6 +41,18 @@ def sym_key_gen(sym_key_size=None, debug=0):
     return generate_random_string(length=size, debug=debug)
 
 
+def generate_iv(iv_length=None):
+
+    from Const import IV_DEFAULT_SIZE
+    import os
+
+    if iv_length is None:
+        iv_length = IV_DEFAULT_SIZE
+
+    # Generate and return a random initialization vector
+    return os.urandom(iv_length)
+
+
 # Encrypt the plaintext using the AES-GCM with the given key and a randomly generated IV.
 # Params:
 # - key = encryption key
@@ -48,7 +60,7 @@ def sym_key_gen(sym_key_size=None, debug=0):
 # - associated_data = data associated to the encryption that will be authenticated but not encrypted (it must also be
 #   passed in on decryption)
 # - debug = if 1, prints will be shown during execution; default 0, no prints are shown
-def sym_encrypt(key=None, plaintext=None, associated_data=None, debug=0):
+def sym_encrypt(key=None, iv=None, plaintext=None, associated_data=None, debug=0):
 
     # Check if the plaintext is set
     if plaintext is None:
@@ -64,11 +76,12 @@ def sym_encrypt(key=None, plaintext=None, associated_data=None, debug=0):
             print('EXCEPTION in encryption key')
         raise Exception
 
-    from Const import IV_DEFAULT_SIZE
-    import os
-
-    # Generate a random initialization vector
-    iv = os.urandom(IV_DEFAULT_SIZE)
+    # Check if the iv is set
+    if iv is None:
+        log('[ERROR] Encryption IV exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in encryption IV')
+        raise Exception
 
     # Construct an AES-GCM Cipher object with the given key and IV
     encryptor = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend()).encryptor()
@@ -80,7 +93,7 @@ def sym_encrypt(key=None, plaintext=None, associated_data=None, debug=0):
     # Encrypt the plaintext and get the associated ciphertext (GCM does not require padding)
     ciphertext = encryptor.update(plaintext) + encryptor.finalize()
 
-    return iv, ciphertext, encryptor.tag
+    return ciphertext, encryptor.tag
 
 
 # Decrypt the ciphertext using AES-GCM with the given key and IV.

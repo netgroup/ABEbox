@@ -38,7 +38,7 @@ def clamp(value=None, lower_bound=None, upper_bound=None, debug=0):
     return max(lower_bound, min(value, upper_bound))
 
 
-def read_bytes_from_file(infile=None, bytes_num=8, debug=0):
+def read_bytes_from_file(infile=None, debug=0):
 
     import os.path
     from Log import log
@@ -51,7 +51,7 @@ def read_bytes_from_file(infile=None, bytes_num=8, debug=0):
         raise Exception
 
     # Return data from the infile
-    return open(infile, 'rb').read(bytes_num)
+    return open(infile, 'rb').read()
 
 
 def write_bytes_on_file(outfile=None, data=None, debug=0):

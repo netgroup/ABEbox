@@ -40,19 +40,17 @@ def decrypt_file(ciphertext_infile=None, pk_files=None, sk_files=None, debug=Non
                 print('EXCEPTION in decrypt_file sk_files element')
             raise Exception
 
-    ciphertext_outfile = 'dec_re_' + ciphertext_infile
-
     # Remove re-encryptions with ABE using given public and secret keys
-    #remove_re_encryptions(ciphertext_infile, ciphertext_outfile, pk_files, sk_files, debug)
+    remove_re_encryptions(ciphertext_infile, pk_files, sk_files, debug)
 
     plaintext_outfile = 'dec_' + ciphertext_infile
 
     # Decrypt ciphertext file to get plaintext
-    #decrypt_ciphertext(ciphertext_outfile, plaintext_outfile, pk_files[0], sk_files[0], debug)
     decrypt_ciphertext(ciphertext_infile, plaintext_outfile, pk_files[0], sk_files[0], debug)
+    #decrypt_ciphertext(ciphertext_infile, plaintext_outfile, pk_files[0], sk_files[0], debug)
 
 
-def remove_re_encryptions(infile=None, outfile=None, pk_files=None, sk_files=None, debug=0):
+def remove_re_encryptions(infile=None, pk_files=None, sk_files=None, debug=0):
 
     from Log import log
     import os.path
@@ -73,7 +71,7 @@ def remove_re_encryptions(infile=None, outfile=None, pk_files=None, sk_files=Non
 
     # Check if each element of the pk_files exists
     for pk_file in pk_files:
-        if os.path.exists(pk_file):
+        if not os.path.exists(pk_file):
             log('[ERROR] remove_re_encryptions pk_files element exception')
             if debug:  # ONLY USE FOR DEBUG
                 print('EXCEPTION in remove_re_encryptions pk_files element')
@@ -88,15 +86,11 @@ def remove_re_encryptions(infile=None, outfile=None, pk_files=None, sk_files=Non
 
     # Check if each element of the sk_files exists
     for sk_file in sk_files:
-        if os.path.exists(sk_file):
+        if not os.path.exists(sk_file):
             log('[ERROR] remove_re_encryptions sk_files element exception')
             if debug:  # ONLY USE FOR DEBUG
                 print('EXCEPTION in remove_re_encryptions sk_files element')
             raise Exception
-
-    # If outfile is not defined, set a default value
-    if outfile is None:
-        outfile = 'dec_re_' + infile
 
     from ReEncPrimitives import re_decrypt
 
@@ -108,10 +102,7 @@ def remove_re_encryptions(infile=None, outfile=None, pk_files=None, sk_files=Non
         sk_file = sk_files[-1-i]
 
         # Decrypt re-encryption
-        re_decrypt(outfile, infile, pk_file, sk_file, debug)
-
-        # Update input file
-        infile = outfile
+        re_decrypt(infile, pk_file, sk_file, debug)
 
 
 def decrypt_ciphertext(infile=None, outfile=None, pk_file=None, sk_file=None, debug=0):
@@ -145,7 +136,8 @@ def decrypt_ciphertext(infile=None, outfile=None, pk_file=None, sk_file=None, de
         outfile = 'dec_' + infile
 
     # Get encryption parameters
-    ciphertext, enc_sym_key, iv, tag = get_encryption_params(infile, debug)
+    transf_ciphertext, enc_sym_key, iv, tag, n, k0, ciphertext_length, leading_zeros = get_encryption_params(infile,
+                                                                                                             debug)
 
     # Decrypt symmetric key using ABE with given public and secret keys
     sym_key = decrypt_sym_key(enc_sym_key, pk_file, sk_file, debug)
@@ -154,9 +146,9 @@ def decrypt_ciphertext(infile=None, outfile=None, pk_file=None, sk_file=None, de
         print('DECRYPTED SYMMETRIC KEY = (%d) %s' % (len(sym_key), sym_key))
         print('IV = (%d) %s' % (len(iv), iv))
         print('TAG = (%d) %s' % (len(tag), tag))
-        print('CIPHERTEXT = (%d) %s' % (len(ciphertext), ciphertext))
+        print('CIPHERTEXT = (%d) %s' % (len(transf_ciphertext), transf_ciphertext))
 
-    ciphertext = remove_aont(ciphertext, debug)
+    ciphertext = remove_aont(transf_ciphertext, n, k0, ciphertext_length, leading_zeros, debug)
 
     from SymEncPrimitives import sym_decrypt
 
@@ -187,28 +179,30 @@ def get_encryption_params(infile=None, debug=0):
     # Read and parse data bytes from file
     with(open(infile, 'rb')) as fin:
 
-        from Const import H, IV_TAG, AONT_DEFAULT_N
+        from Const import B, H, Q, IV_DEFAULT_SIZE
         import struct
 
-        enc_sym_key_length = struct.unpack('H', fin.read(H))[0]
-        enc_sym_key, iv, tag, transf_ciphertext_block_num = \
-            struct.unpack('%ds%ds%dsH' % (enc_sym_key_length, IV_TAG, IV_TAG),
-                          fin.read(enc_sym_key_length + IV_TAG + IV_TAG + H + 1))
-        transf_ciphertext_length = transf_ciphertext_block_num * int(AONT_DEFAULT_N / 8)
-        ciphertext_block_lengths, transf_ciphertext = \
-            struct.unpack('%dH%ds' % (transf_ciphertext_block_num, transf_ciphertext_length),
-                          fin.read(transf_ciphertext_block_num * H + transf_ciphertext_length))
+        fin.seek(B + B)
+        n, k0, enc_key_length = struct.unpack('HHH', fin.read(3 * H))
+        enc_key, iv, tag, ciphertext_length, leading_zeros = \
+            struct.unpack('%ds%ds%dsQH' % (enc_key_length, IV_DEFAULT_SIZE, IV_DEFAULT_SIZE),
+                          fin.read(enc_key_length + IV_DEFAULT_SIZE + IV_DEFAULT_SIZE + Q + H + 5))
+        transf_ciphertext_length = int((int(ciphertext_length * 8 / (n - k0)) + 1) * n / 8)
+        transf_ciphertext = struct.unpack('%ds' % transf_ciphertext_length, fin.read(transf_ciphertext_length))[0]
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('ENC SYM KEY LENGTH = %d' % enc_sym_key_length)
-        print('ENC SYM KEY = (%d) %s' % (len(enc_sym_key), enc_sym_key))
-        print('IV = (%d) %s' % (len(iv), iv))
-        print('TAG = (%s) (%d) %s' % (type(tag), len(tag), tag))
-        print('TRANSFORMED CIPHERTEXT BLOCK NUM = %d' % transf_ciphertext_block_num)
-        print('CIPHERTEXT BLOCK LENGTHS = %d' % ciphertext_block_lengths)
-        print('TRANSFORMED CIPHERTEXT = (%d) %s' % (len(transf_ciphertext), transf_ciphertext))
+        if debug:  # ONLY USE FOR DEBUG
+            #print('READ VERSION = %d' % version)
+            print('READ N = %d' % n)
+            print('READ K0 = %d' % k0)
+            #print('READ RE-ENC NUM = %d' % re_enc_num)
+            print('READ ENC SYM KEY = (%d) %s' % (enc_key_length, enc_key))
+            print('READ IV = (%d) %s' % (len(iv), iv))
+            print('READ TAG = (%d) %s' % (len(tag), tag))
+            print('READ CIPHERTEXT LENGTH = %d' % ciphertext_length)
+            print('READ LEADING ZEROS = %d' % leading_zeros)
+            print('READ TRANSFORMED CIPHERTEXT = (%d) %s' % (len(transf_ciphertext), transf_ciphertext))
 
-    return transf_ciphertext, enc_sym_key, iv, tag
+    return transf_ciphertext, enc_key, iv, tag, n, k0, ciphertext_length, leading_zeros
 
 
 def decrypt_sym_key(enc_key=None, pk_file=None, sk_file=None, debug=0):
@@ -258,9 +252,70 @@ def decrypt_sym_key(enc_key=None, pk_file=None, sk_file=None, debug=0):
     return dec_sym_key
 
 
-def remove_aont(data=None, debug=0):
+def remove_aont(data=None, n=None, k0=None, ciphertext_length=None, leading_zeros=None, debug=0):
 
-    from OAEPbis import unpad
     from binascii import hexlify
 
-    return unpad(hexlify(data).decode(), debug)
+    # Initialise variables
+    untransformed_ciphertext = ''
+
+    # Divide message in blocks to perform the untransformation
+    step = int(n / 8)
+    for i in range(0, len(data), step):
+
+        # Compute next block starting point
+        next_i = i + step
+
+        print('BLOCK = (%d) %s' % (len(data[i: next_i]), data[i: next_i]))
+
+        # Get a block of fixed length from data
+        to_untransform = bin(int(hexlify(data[i: next_i]).decode(), 16))[2:].zfill(n)
+
+        if debug:  # ONLY USE FOR DEBUG
+            print('TO_UNTRANSFORM = (%d) %s' % (len(to_untransform), to_untransform))
+
+        from OAEPbis import init, unpad
+
+        # Initialize untransformation parameters
+        init(n=n, k0=k0)
+
+        # Apply untransformation to ciphertext block
+        untransformed_ciphertext_block_hex = unpad(to_untransform, debug)[2:]
+
+        if debug:  # ONLY USE FOR DEBUG
+            print('UNTRANSFORMED CIPHERTEXT BLOCK HEX = (%d) %s' % (len(untransformed_ciphertext_block_hex),
+                                                                    untransformed_ciphertext_block_hex))
+
+        # # Convert untransformed ciphertext to binary
+        # untransformed_ciphertext_block_bits = bin(int(untransformed_ciphertext_block_hex, 16))[2:]
+        #
+        # if debug:  # ONLY USE FOR DEBUG
+        #     print('TRANSFORMED CIPHERTEXT BLOCK BITS = (%d) %s' % (len(untransformed_ciphertext_block_bits),
+        #                                                            untransformed_ciphertext_block_bits))
+        #
+        # # Check if leading zeros have been cut: if yes, prepend the to the transformed ciphertext block bits
+        # if len(untransformed_ciphertext_block_bits) % 8 != 0:
+        #     untransformed_ciphertext_block_bits = untransformed_ciphertext_block_bits.zfill(
+        #         8 * int((len(untransformed_ciphertext_block_bits) + 7) / 8))
+        #
+        # if debug:  # ONLY USE FOR DEBUG
+        #     print('UNTRANSFORMED CIPHERTEXT BLOCK BITS WITH 0s = (%d) %s' % (len(untransformed_ciphertext_block_bits),
+        #                                                                      untransformed_ciphertext_block_bits))
+
+        if next_i == len(data):
+
+            c = '0' * leading_zeros + untransformed_ciphertext_block_hex
+            print('UNTRANSF BLOCK HEX = (%d) %s' % (len(c), c))
+
+            untransformed_ciphertext_block_hex = '0' * leading_zeros + untransformed_ciphertext_block_hex
+
+        untransformed_ciphertext += untransformed_ciphertext_block_hex
+
+    untransformed_ciphertext = untransformed_ciphertext[: ciphertext_length * 2]
+
+    if debug:
+        print('UNTRANSFORMED CIPHERTEXT = (%d) %s' % (len(untransformed_ciphertext), untransformed_ciphertext))
+
+    from binascii import unhexlify
+
+    return unhexlify(untransformed_ciphertext)

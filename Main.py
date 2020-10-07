@@ -109,16 +109,26 @@ if __name__ == '__main__':
         for line in fin:
             print(line)
 
-    import Encryptor as enc
+    plaintext_file = 'test_file.txt'
+    ciphertext_file = 'enc_test_file'
+    policy = '\'business_staff\''
 
-    enc.create_encrypted_file('test_file.txt', 'enc_test_file', 'pub_key', '\'business_staff\'', 1)
+    import Encryptor as Enc
+
+    Enc.create_encrypted_file(plaintext_file, ciphertext_file, pk_file, policy, 1)
+
+    #exit(0)
+
+    import Re_encryptor as Re_enc
+
+    Re_enc.re_encrypt(ciphertext_file, 16, pk_file, policy, 1)
 
     pk_files = [pk_file]
     sk_files = [sk_file]
 
-    import Decryptor as dec
+    import Decryptor as Dec
 
-    dec.decrypt_file('enc_test_file', pk_files, sk_files, 1)
+    Dec.decrypt_file(ciphertext_file, pk_files, sk_files, 1)
 
     exit(0)
     # # TEST ENCRYPTION

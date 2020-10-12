@@ -13,7 +13,7 @@ def re_encrypt(ciphertext_infile=None, re_enc_length=None, new_pk_file=None, pol
     :return: the new ciphertext with all the parameters required for decryption
     """
 
-    from Const import RE_ENC_LENGTH
+    from crypto.Const import RE_ENC_LENGTH
     from Log import log
     import os.path
 
@@ -42,16 +42,15 @@ def re_encrypt(ciphertext_infile=None, re_enc_length=None, new_pk_file=None, pol
     if re_enc_length is None:
         re_enc_length = RE_ENC_LENGTH
 
-    seed, k, iv, tag, re_enc_length = re_enc_ciphertext_bytes(ciphertext_infile, re_enc_length, debug)
+    seed, k, iv, re_enc_length = re_enc_ciphertext_bytes(ciphertext_infile, re_enc_length, debug)
 
     if debug:  # ONLY USE FOR DEBUG
         print('SEED = (%d) %s' % (len(seed), seed))
         print('KEY = (%d) %s' % (len(k), k))
         print('IV = (%d) %s' % (len(iv), iv))
-        print('TAG = (%d) %s' % (len(tag), tag))
         print('RE-ENCRYPTION LENGTH = %d' % re_enc_length)
 
-    from Const import SYM_KEY_DEFAULT_SIZE, SEED_LENGTH
+    from crypto.Const import SYM_KEY_DEFAULT_SIZE, SEED_LENGTH
     import struct
 
     # Create struct for seed, key and re-enc length to encrypt
@@ -61,12 +60,12 @@ def re_encrypt(ciphertext_infile=None, re_enc_length=None, new_pk_file=None, pol
     enc_data = encrypt_seed_key_len(data=data, pk_file=new_pk_file, policy=policy, debug=debug)
 
     # Add re-encryption parameters to ciphertext file
-    add_re_enc_params(file=ciphertext_infile, enc_seed_key_len=enc_data, iv=iv, tag=tag, debug=debug)
+    add_re_enc_params(file=ciphertext_infile, enc_seed_key_len=enc_data, iv=iv, debug=debug)
 
 
 def re_enc_ciphertext_bytes(ciphertext_infile=None, re_enc_length=None, debug=0):
 
-    from Const import RE_ENC_LENGTH
+    from crypto.Const import RE_ENC_LENGTH
     from Log import log
     import os.path
 
@@ -103,15 +102,14 @@ def get_ciphertext_info(ciphertext_infile=None, debug=0):
     # Get ciphertext offset and length from file
     with(open(ciphertext_infile, 'rb')) as fin:
 
-        from Const import B, H, Q, IV_DEFAULT_SIZE
+        from crypto.Const import B, H, Q, IV_DEFAULT_SIZE
         import struct
 
         fin.seek(2 * B)
         n, k0, enc_key_length = struct.unpack('HHH', fin.read(3 * H))
-        fin.seek(enc_key_length + IV_DEFAULT_SIZE * 2 + 5, 1)  # TODO PERCHé + 5 byte???
+        fin.seek(enc_key_length + IV_DEFAULT_SIZE + 5, 1)  # TODO PERCHé + 5 byte???
         ciphertext_length = struct.unpack('Q', fin.read(Q))[0]
-        transf_ciphertext_length = int((int(ciphertext_length * 8 / (n - k0)) + 1) * n / 8)
-
+        transf_ciphertext_length = (ciphertext_length * 8 // (n - k0) + 1) * n // 8
         fin.seek(H, 1)
         ciphertext_offset = fin.tell()
 
@@ -148,7 +146,7 @@ def apply_punctured_enc(ciphertext_infile=None, ciphertext_offset=None, cipherte
             print('EXCEPTION in apply_punctured_enc ciphertext_length')
         raise Exception
 
-    from Const import RE_ENC_MIN_LENGTH, RE_ENC_LENGTH
+    from crypto.Const import RE_ENC_MIN_LENGTH, RE_ENC_LENGTH
     from FunctionUtils import clamp
 
     # Set default value for re-encryption length if it is not set
@@ -167,15 +165,14 @@ def apply_punctured_enc(ciphertext_infile=None, ciphertext_offset=None, cipherte
     if debug:  # ONLY USE FOR DEBUG
         print('RE_ENC_LENGTH = %d' % re_enc_length)
 
-    seed, k, iv, tag = re_enc_bytes(ciphertext_infile, ciphertext_offset, ciphertext_length, re_enc_length, debug)
+    seed, k, iv = re_enc_bytes(ciphertext_infile, ciphertext_offset, ciphertext_length, re_enc_length, debug)
 
     if debug:  # ONLY USE FOR DEBUG
         print('SEED = (%d) %s' % (len(seed), seed))
         print('KEY = (%d) %s' % (len(k), k))
         print('IV = (%d) %s' % (len(iv), iv))
-        print('TAG = (%d) %s' % (len(tag), tag))
 
-    return seed, k, iv, tag, re_enc_length
+    return seed, k, iv, re_enc_length
 
 
 def re_enc_bytes(ciphertext_infile=None, ciphertext_offset=None, ciphertext_length=None, re_enc_length=None, debug=0):
@@ -204,8 +201,8 @@ def re_enc_bytes(ciphertext_infile=None, ciphertext_offset=None, ciphertext_leng
             print('EXCEPTION in re_enc_bytes ciphertext_length')
         raise Exception
 
-    from Const import IV_DEFAULT_SIZE, SEED_LENGTH
-    from SymEncPrimitives import sym_key_gen, generate_iv
+    from crypto.Const import IV_DEFAULT_SIZE, SEED_LENGTH
+    from crypto.SymEncPrimitives import sym_key_gen, generate_iv
 
     # Re-encryption symmetric key
     k = sym_key_gen(sym_key_size=SEED_LENGTH, debug=debug)
@@ -238,42 +235,40 @@ def re_enc_bytes(ciphertext_infile=None, ciphertext_offset=None, ciphertext_leng
             print('BYTES TO RE-ENCRYPT = (%d) %s' % (len(bytes_to_re_enc), bytes_to_re_enc))
             print('INDEX TO RE-ENCRYPT = (%d) %s' % (len(re_enc_indexes), re_enc_indexes))
 
-        from SymEncPrimitives import sym_encrypt
+        from crypto.SymEncPrimitives import sym_encrypt
 
         # Re-encrypt ciphertext
-        re_enc_ciphertext, tag = sym_encrypt(key=k, iv=iv, plaintext=bytes_to_re_enc, associated_data=None, debug=debug)
+        re_enc_ciphertext = sym_encrypt(key=k, iv=iv, plaintext=bytes_to_re_enc, debug=debug)
 
         if debug:  # ONLY USE FOR DEBUG
             print('RE-ENCRYPTED CIPHERTEXT = (%d) %s -> %s' % (len(re_enc_ciphertext), re_enc_ciphertext,
                                                                hexlify(re_enc_ciphertext).decode()))
 
+        # Replace bytes with re-encrypted ones
         replace_re_enc_bytes(ciphertext_infile, re_enc_ciphertext, re_enc_indexes, debug)
 
-        print(ciphertext_infile)
-
         # Update number of re-encryptions
-        with(open(ciphertext_infile, 'rb+')) as fin:
+        #with(open(ciphertext_infile, 'rb+')) as fin:
 
-            from Const import H
-            import struct
-
-            # Retrieve previous re-encryptions number from file
-            fin.seek(ciphertext_offset + ciphertext_length)
-            print(fin.tell())
-            re_enc_num = struct.unpack('H', fin.read(H))[0]
-
-            if debug:  # ONLY USE FOR DEBUG
-                print('RE-ENCRYPTION NUM = %d' % re_enc_num)
-
-            # Update number of re-encryptions
-            re_enc_num += 1
-
-            if debug:  # ONLY USE FOR DEBUG
-                print('UPDATE RE-ENCRYPTION NUM = %d' % re_enc_num)
-
-            # Overwrite re-encryptions number
-            fin.seek(- H, 1)
-            fin.write(struct.pack('H', re_enc_num))
+            # from crypto.Const import H
+            # import struct
+            #
+            # # Retrieve previous re-encryptions number from file
+            # fin.seek(ciphertext_offset + ciphertext_length)
+            # re_enc_num = struct.unpack('H', fin.read(H))[0]
+            #
+            # if debug:  # ONLY USE FOR DEBUG
+            #     print('RE-ENCRYPTION NUM = %d' % re_enc_num)
+            #
+            # # Update number of re-encryptions
+            # re_enc_num += 1
+            #
+            # if debug:  # ONLY USE FOR DEBUG
+            #     print('UPDATE RE-ENCRYPTION NUM = %d' % re_enc_num)
+            #
+            # # Overwrite re-encryptions number
+            # fin.seek(- H, 1)
+            # fin.write(struct.pack('H', re_enc_num))
 
     else:  # Re-encryption of the whole ciphertext
 
@@ -282,19 +277,21 @@ def re_enc_bytes(ciphertext_infile=None, ciphertext_offset=None, ciphertext_leng
             # Retrieve ciphertext to re-encrypt
             fin.seek(ciphertext_offset)
 
-            from Const import H
+            from crypto.Const import H
             import struct
 
-            ciphertext, re_enc_num = struct.unpack('%dsH', fin.read(ciphertext_length + H))
+            #ciphertext, re_enc_num = struct.unpack('%dsH', fin.read(ciphertext_length + H))
+            #ciphertext = struct.unpack('%ds', fin.read(ciphertext_length))
+            ciphertext = fin.read(ciphertext_length)
 
             if debug:  # ONLY USE FOR DEBUG
                 print('CIPHERTEXT = (%d) %s -> %s' % (len(ciphertext), ciphertext, hexlify(ciphertext).decode()))
-                print('RE-ENCRYPTION NUM = %d' % re_enc_num)
+                #print('RE-ENCRYPTION NUM = %d' % re_enc_num)
 
-            from SymEncPrimitives import sym_encrypt
+            from crypto.SymEncPrimitives import sym_encrypt
 
             # Re-encrypt ciphertext
-            re_enc_ciphertext, tag = sym_encrypt(key=k, iv=iv, plaintext=ciphertext, associated_data=None, debug=debug)
+            re_enc_ciphertext = sym_encrypt(key=k, iv=iv, plaintext=ciphertext, debug=debug)
 
             if debug:  # ONLY USE FOR DEBUG
                 print('RE-ENC CIPHERTEXT LENGTH = %d vs CIPHERTEXT LENGTH = %d' % (len(re_enc_ciphertext),
@@ -307,24 +304,27 @@ def re_enc_bytes(ciphertext_infile=None, ciphertext_offset=None, ciphertext_leng
                 raise Exception
 
             # Update number of re-encryptions
-            re_enc_num += 1
+            #re_enc_num += 1
 
             if debug:  # ONLY USE FOR DEBUG
                 print('RE-ENCRYPTED CIPHERTEXT = (%d) %s -> %s' % (len(re_enc_ciphertext), re_enc_ciphertext,
                                                                    hexlify(re_enc_ciphertext).decode()))
-                print('UPDATE RE-ENCRYPTION NUM = %d' % re_enc_num)
+                #print('UPDATE RE-ENCRYPTION NUM = %d' % re_enc_num)
 
             # Create struct with data to write
-            data_to_write = struct.pack('%dsH' % len(re_enc_ciphertext), re_enc_ciphertext, re_enc_num)
+            #data_to_write = struct.pack('%dsH' % len(re_enc_ciphertext), re_enc_ciphertext, re_enc_num)
+            #data_to_write = struct.pack('%ds' % len(re_enc_ciphertext), re_enc_ciphertext)
 
-            if debug:  # ONLY USE FOR DEBUG
-                print('DATA TO WRITE ON FILE = %s' % data_to_write)
+            #if debug:  # ONLY USE FOR DEBUG
+            #    print('DATA TO WRITE ON FILE = %s' % data_to_write)
 
             # Overwrite previous ciphertext and re-encryptions number
-            fin.seek(- len(re_enc_ciphertext) - H, 1)
-            fin.write(data_to_write)
+            #fin.seek(- len(re_enc_ciphertext) - H, 1)
+            fin.seek(- len(re_enc_ciphertext), 1)
+            #fin.write(data_to_write)
+            fin.write(re_enc_ciphertext)
 
-    return seed, k, iv, tag
+    return seed, k, iv
 
 
 def get_bytes_to_re_enc(ciphertext_infile=None, ciphertext_offset=None, ciphertext_length=None, re_enc_length=None, seed=None, debug=0):
@@ -395,7 +395,8 @@ def get_bytes_to_re_enc(ciphertext_infile=None, ciphertext_offset=None, cipherte
 
             # Retrieve specific byte
             fin.seek(index)
-            byte = struct.unpack('s', fin.read(1))[0]
+            #byte = struct.unpack('s', fin.read(1))[0]
+            byte = fin.read(1)
 
             if debug:  # ONLY USE FOR DEBUG
                 print('BYTE TO RE-ENCRYPT =', byte)
@@ -577,66 +578,11 @@ def replace_re_enc_bytes(ciphertext_infile=None, re_encr_bytes=None, re_enc_inde
             fout.seek(re_enc_indexes[i])
 
             # Overwrite byte with re-encrypted one
-            fout.write(struct.pack('1s', re_encr_bytes[i:i+1]))
-
-    # # Check if trailing zeros have been cut in re_enc_bits
-    # diff_re_enc_bits_num = re_enc_length - len(re_enc_bits)
-    #
-    # if debug:
-    #     print('%d trailing zeros have been cut in re_enc_bits' % diff_re_enc_bits_num)
-    #
-    # # Fill cut trailing zeros
-    # if diff_re_enc_bits_num > 0:
-    #     re_enc_bits = '0' * diff_re_enc_bits_num + re_enc_bits
-    #
-    # if debug:
-    #     print('RE-ENCRYPTED BITS = (%d) %s' % (len(re_enc_bits), re_enc_bits))
-    #
-    # # Convert the ciphertext in bits
-    # ciphertext_bits = bin(int(ciphertext, 16))[2:]
-    #
-    # if debug:
-    #     print('CIPHERTEXT BITS = (%d) %s' % (len(ciphertext_bits), ciphertext_bits))
-    #
-    # # Check if trailing zeros have been cut in ciphertext
-    # diff_ciphertext_bits_num = len(ciphertext)*4 - len(ciphertext_bits)
-    #
-    # if debug:
-    #     print('%d trailing zeros have been cut in ciphertext_bits' % diff_ciphertext_bits_num)
-    #
-    # # Fill cut trailing zeros
-    # if diff_ciphertext_bits_num > 0:
-    #     ciphertext_bits = '0' * diff_ciphertext_bits_num + ciphertext_bits
-    #
-    # if debug:
-    #     print('CIPHERTEXT BITS = (%d) %s' % (len(ciphertext_bits), ciphertext_bits))
-    #
-    # # Convert ciphertext to a list of bits
-    # ciphertext_bits = list(ciphertext_bits)
-    #
-    # if debug:
-    #     print('re_enc_indexes = ', len(re_enc_indexes))
-    #     print('re_enc_bits = ', len(re_enc_bits))
-    #     print('re_enc_length = ', re_enc_length)
-    #     print('ciphertext_bits = (%d) %s' % (len(ciphertext_bits), ciphertext_bits))
-    #
-    # # Replace original bits with re-encrypted ones
-    # for i in range(len(re_enc_indexes)):
-    #     if ciphertext_bits[re_enc_indexes[i]] != re_enc_bits[i]:
-    #         print('REPLACING IN POSITION %d %s -> %s' % (re_enc_indexes[i], ciphertext_bits[re_enc_indexes[i]],
-    #                                                      re_enc_bits[i]))
-    #         ciphertext_bits[re_enc_indexes[i]] = re_enc_bits[i]
-    #
-    # # Convert the replaced ciphertext to a string
-    # re_enc_ciphertext_bits = ''.join(ciphertext_bits)
-    #
-    # if debug:
-    #     print('RE-ENCRYPTED CIPHERTEXT BITS = (%d) %s' % (len(re_enc_ciphertext_bits), re_enc_ciphertext_bits))
-    #
-    # return hex(int(re_enc_ciphertext_bits, 2))[2:]
+            #fout.write(struct.pack('1s', re_encr_bytes[i:i+1]))
+            fout.write(re_encr_bytes[i:i+1])
 
 
-def add_re_enc_params(file=None, enc_seed_key_len=None, iv=None, tag=None, debug=0):
+def add_re_enc_params(file=None, enc_seed_key_len=None, iv=None, debug=0):
     """
     Update the given file adding all the parameters required to decrypt the re-encryption process
     :param file: file to update
@@ -644,7 +590,6 @@ def add_re_enc_params(file=None, enc_seed_key_len=None, iv=None, tag=None, debug
                              're-encryption length' (third element) bytes positions for punctured encryption, second
                              element used in the symmetric re-encryption
     :param iv: iv used in the cipher
-    :param tag: tag used in the cipher
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     """
 
@@ -672,70 +617,20 @@ def add_re_enc_params(file=None, enc_seed_key_len=None, iv=None, tag=None, debug
             print('EXCEPTION in add_re_enc_params iv')
         raise Exception
 
-    # Check if tag is set
-    if tag is None:
-        log('[ERROR] add_re_enc_params tag exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in add_re_enc_params tag')
-        raise Exception
-
-    from Const import IV_DEFAULT_SIZE
+    from crypto.Const import IV_DEFAULT_SIZE
     import struct
 
     # Create struct of data to append to the ciphertext file
-    struct_format = '%ds%ds%dsH' % (len(enc_seed_key_len), IV_DEFAULT_SIZE, IV_DEFAULT_SIZE)
-    data_to_append = struct.pack(struct_format, enc_seed_key_len, iv, tag, len(enc_seed_key_len))
+    struct_format = '%ds%dsH' % (len(enc_seed_key_len), IV_DEFAULT_SIZE)
+    data_to_append = struct.pack(struct_format, enc_seed_key_len, iv, len(enc_seed_key_len))
+
+    from FunctionUtils import write_bytes_on_file
 
     # Append data bytes to the file
-    with(open(file, 'ab')) as fout:
+    write_bytes_on_file(file, data_to_append, 'ab', 0, debug)
 
-        fout.write(data_to_append)
-
-        # # Check if EOF has been reached
-        # if re_enc == '':
-        #
-        #     fin.seek(-transf_ciphertext_length, 1)
-        #
-        #     struct_format = '%dsBH%ds%ds%ds' % (len(new_ciphertext), len(enc_seed_key), len(iv), len(tag))
-        #
-        #     if debug:
-        #         print('STRING FORMAT FOR FIRST RE-ENC STRUCT = ', struct_format)
-        #
-        #     import struct
-        #
-        #     # Create struct with all re-encryption data
-        #     data_to_write = struct.pack(struct_format, new_ciphertext, 1, len(enc_seed_key), enc_seed_key, iv, tag)
-        #
-        # else:
-        #
-        #     prev_re_enc_num = struct.unpack('B', re_enc)[0]
-        #
-        #     for i in range(prev_re_enc_num):
-        #
-        #         enc_seed_key_len = struct.unpack('H', fin.read(H))[0]
-        #         enc_s_k, iv, tag = struct.unpack('%ds%ds%ds' % (enc_seed_key_len, IV_DEFAULT_SIZE, IV_DEFAULT_SIZE),
-        #                                          fin.read(enc_seed_key_len + IV_DEFAULT_SIZE + IV_DEFAULT_SIZE))
-        #
-        #
-        #     # Create string format for struct
-        #     struct_format = '%ds%ds%dsQ%ds' % (enc_key_length, len(iv), len(tag), len(transf_ciphertext))
-        #
-        #     if debug:
-        #         print('STRING FORMAT FOR STRUCT = ', struct_format)
-        #
-        #     import struct
-        #
-        #     # Create struct with all data
-        #     data_to_write = struct.pack(struct_format, version, n, k0, enc_key_length, enc_key, iv, tag, ciphertext_length,
-        #                                 transf_ciphertext)
-        #
-        #     if debug:  # ONLY USE FOR DEBUG
-        #         print('DATA TO WRITE ON FILE =', data_to_write)
-        #
-        # from FunctionUtils import write_bytes_on_file
-        #
-        # # Write data bytes on given outfile
-        # write_bytes_on_file(file, data_to_write, debug)
+    # Update re-encryptions number increasing its value by 1
+    update_re_enc_num(file, 1, debug)
 
 
 def encrypt_seed_key_len(data=None, pk_file=None, policy=None, debug=0):
@@ -772,16 +667,18 @@ def encrypt_seed_key_len(data=None, pk_file=None, policy=None, debug=0):
             print('EXCEPTION in encrypt_seed_key policy')
         raise Exception
 
+    from crypto.Const import TEMP_PATH
+
     # Create temporary files for ABE encryption
-    temp_file = 'temp.txt'
-    enc_temp_file = 'enc_' + temp_file
+    temp_file = TEMP_PATH + 'temp'
+    enc_temp_file = TEMP_PATH + 'enc_' + temp_file.rsplit('/', 1)[1]
 
     from FunctionUtils import write_bytes_on_file, read_bytes_from_file
 
     # Write data on temporary file
-    write_bytes_on_file(temp_file, data, debug)
+    write_bytes_on_file(temp_file, data, 'wb', 0, debug)
 
-    from ABEPrimitives import encrypt
+    from crypto.ABEPrimitives import encrypt
 
     # Encrypt temp file with ABE
     encrypt(enc_outfile=enc_temp_file, pk_file=pk_file, plaintext_file=temp_file, policy=policy, debug=debug)
@@ -794,9 +691,47 @@ def encrypt_seed_key_len(data=None, pk_file=None, policy=None, debug=0):
 
     # Delete temporary files
     #os.remove(temp_file)
-    #os.remove(enc_temp_file)
+    os.remove(enc_temp_file)
 
     return enc_data
+
+
+def update_re_enc_num(file=None, increase=0, debug=0):
+
+    from Log import log
+    import os.path
+
+    # Check if the file is set and exists
+    if file is None or not os.path.isfile(file):
+        log('[ERROR] update_re_enc_num file exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION update_re_enc_num file')
+        raise Exception
+
+    # Get ciphertext offset and length from file
+    with(open(file, 'rb+')) as fin:
+
+        from crypto.Const import B, H, Q, IV_DEFAULT_SIZE
+        import struct
+
+        # Retrieve re-encryptions num from the file
+        fin.seek(2 * (B + H))
+        enc_key_length = struct.unpack('H', fin.read(H))[0]
+        fin.seek(enc_key_length + IV_DEFAULT_SIZE + Q + 5, 1)  # TODO PERCHé + 5 byte???
+        re_enc_num = struct.unpack('H', fin.read(H))[0]
+
+        if debug:  # ONLY USE FOR DEBUG
+            print('READ RE-ENCRYPTIONS NUM = %d' % re_enc_num)
+
+        # Update value according to the given increase
+        re_enc_num += increase
+
+        if debug:  # ONLY USE FOR DEBUG
+            print('UPDATED RE-ENCRYPTIONS NUM = %d' % re_enc_num)
+
+        # Overwrite re-encryptions number
+        fin.seek(- H, 1)
+        fin.write(struct.pack('H', re_enc_num))
 
 
 def re_decrypt(ciphertext_infile=None, pk_file=None, sk_file=None, debug=0):
@@ -834,25 +769,6 @@ def re_decrypt(ciphertext_infile=None, pk_file=None, sk_file=None, debug=0):
 
     decrypt_re_encryption(re_enc_file=ciphertext_infile, pk_file=pk_file, sk_file=sk_file, debug=debug)
 
-    # import json
-    #
-    # # Read data from ciphertext file
-    # with(open(ciphertext_infile, 'r')) as fin:
-    #     data = json.load(fin)
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('DATA READ FROM CIPHERTEXT = ', data)
-    #
-    # # Extract last re-encryption parameters and remove them from ciphertext file
-    # re_enc_params = data['re-encryptions'].pop()
-    #
-    # # Update ciphertext after decrypting the re-encryption
-    # data['data']['ciphertext'] = decrypt_re_encryption(enc_file_content=data, re_enc_params=re_enc_params,
-    #                                                    pk_file=pk_file, sk_file=sk_file, debug=debug)
-    #
-    # with(open(dec_outfile, 'w')) as fout:
-    #     json.dump(data, fout)
-
 
 def decrypt_re_encryption(re_enc_file=None, pk_file=None, sk_file=None, debug=0):
     """
@@ -889,14 +805,14 @@ def decrypt_re_encryption(re_enc_file=None, pk_file=None, sk_file=None, debug=0)
         raise Exception
 
     # Get re-encryption parameters
-    enc_seed_key, iv, tag = get_re_enc_params(re_enc_file, debug)
+    enc_seed_key, iv = get_re_enc_params(re_enc_file, debug)
 
     # Decrypt seed, key and re_enc_length with ABE using given public and private keys
     seed, key, re_enc_length = decrypt_seed_key(enc_seed_key=enc_seed_key, pk_file=pk_file, sk_file=sk_file,
                                                 debug=debug)
 
     # Remove re-encryption from the ciphertext
-    remove_re_enc(ciphertext_infile=re_enc_file, seed=seed, k=key, iv=iv, tag=tag, re_enc_length=re_enc_length,
+    remove_re_enc(ciphertext_infile=re_enc_file, seed=seed, k=key, iv=iv, re_enc_length=re_enc_length,
                   debug=debug)
 
 
@@ -912,7 +828,7 @@ def get_re_enc_params(file=None, debug=0):
             print('EXCEPTION in get_re_enc_params file')
         raise Exception
 
-    from Const import H, IV_DEFAULT_SIZE
+    from crypto.Const import H, IV_DEFAULT_SIZE
     import struct
 
     # Retrieve re-encryption params from the file
@@ -926,20 +842,19 @@ def get_re_enc_params(file=None, debug=0):
             print('ENC SEED-KEY-LEN LENGTH = %d' % enc_seed_key_len_length)
 
         # Read re-enc params from file
-        fin.seek(- enc_seed_key_len_length - H - 2 * IV_DEFAULT_SIZE - 1, 2) # TODO PERCHé -1???
-        struct_format = '%ds%ds%ds' % (enc_seed_key_len_length, IV_DEFAULT_SIZE, IV_DEFAULT_SIZE)
-        enc_seed_key_len, iv, tag = struct.unpack(struct_format, fin.read(enc_seed_key_len_length + 2 * IV_DEFAULT_SIZE))
+        fin.seek(- enc_seed_key_len_length - H - IV_DEFAULT_SIZE - 1, 2)  # TODO PERCHé -1???
+        struct_format = '%ds%ds' % (enc_seed_key_len_length, IV_DEFAULT_SIZE)
+        enc_seed_key_len, iv = struct.unpack(struct_format, fin.read(enc_seed_key_len_length + IV_DEFAULT_SIZE))
 
         if debug:  # ONLY USE FOR DEBUG
             print('ENC SEED-KEY-LEN = (%d) %s' % (len(enc_seed_key_len), enc_seed_key_len))
             print('IV = (%d) %s' % (len(iv), iv))
-            print('TAG = (%d) %s' % (len(tag), tag))
 
         # Remove re-encryption params from the file
-        fin.seek(- enc_seed_key_len_length - H - 2 * IV_DEFAULT_SIZE, 2)
+        fin.seek(- enc_seed_key_len_length - H - IV_DEFAULT_SIZE, 2)
         fin.truncate()
 
-    return enc_seed_key_len, iv, tag
+    return enc_seed_key_len, iv
 
 
 def decrypt_seed_key(enc_seed_key=None, pk_file=None, sk_file=None, debug=0):
@@ -983,12 +898,12 @@ def decrypt_seed_key(enc_seed_key=None, pk_file=None, sk_file=None, debug=0):
     with(open(enc_temp_file, 'wb')) as fout:
         fout.write(enc_seed_key)
 
-    from ABEPrimitives import decrypt
+    from crypto.ABEPrimitives import decrypt
 
     # Decrypt with ABE using given public key and secret key
     decrypt(dec_outfile=dec_temp_file, pk_file=pk_file, sk_file=sk_file, ciphertext_file=enc_temp_file, debug=debug)
 
-    from Const import H, SYM_KEY_DEFAULT_SIZE, SEED_LENGTH
+    from crypto.Const import H, SYM_KEY_DEFAULT_SIZE, SEED_LENGTH
     import struct
 
     with(open(dec_temp_file, 'rb')) as fin:
@@ -1008,7 +923,7 @@ def decrypt_seed_key(enc_seed_key=None, pk_file=None, sk_file=None, debug=0):
     return seed, key, re_enc_length
 
 
-def remove_re_enc(ciphertext_infile=None, seed=None, k=None, re_enc_length=None, iv=None, tag=None, debug=0):
+def remove_re_enc(ciphertext_infile=None, seed=None, k=None, re_enc_length=None, iv=None, debug=0):
     """
 
     :param ciphertext_infile:
@@ -1016,7 +931,6 @@ def remove_re_enc(ciphertext_infile=None, seed=None, k=None, re_enc_length=None,
     :param k:
     :param re_enc_length:
     :param iv:
-    :param tag:
     :param debug:
     :return:
     """
@@ -1038,6 +952,9 @@ def remove_re_enc(ciphertext_infile=None, seed=None, k=None, re_enc_length=None,
             print('EXCEPTION in remove_re_enc key')
         raise Exception
 
+    # Update re-encryptions number decreasing its value by 1
+    update_re_enc_num(ciphertext_infile, -1, debug)
+
     # Get ciphertext offset and length from the file
     ciphertext_offset, ciphertext_length = get_ciphertext_info(ciphertext_infile, debug)
 
@@ -1047,51 +964,56 @@ def remove_re_enc(ciphertext_infile=None, seed=None, k=None, re_enc_length=None,
         # Read transformed ciphertext from file
         with(open(ciphertext_infile, 'rb+')) as fin:
 
-            from Const import H
+            from crypto.Const import H
             import struct
 
-            # Retrieve ciphertext to re-encrypt
+            # Retrieve ciphertext to re-decrypt
             fin.seek(ciphertext_offset)
-            ciphertext, re_enc_num = struct.unpack('%dsH', fin.read(ciphertext_length + H))
+            #ciphertext, re_enc_num = struct.unpack('%dsH', fin.read(ciphertext_length + H))
+            #ciphertext = struct.unpack('%ds', fin.read(ciphertext_length))
+            ciphertext = fin.read(ciphertext_length)
 
             if debug:  # ONLY USE FOR DEBUG
                 from binascii import hexlify
                 print('CIPHERTEXT = (%d) %s -> %s' % (len(ciphertext), ciphertext, hexlify(ciphertext).decode()))
-                print('RE-ENCRYPTION NUM = %d' % re_enc_num)
+                #print('RE-ENCRYPTION NUM = %d' % re_enc_num)
 
-            from SymEncPrimitives import sym_encrypt
+            from crypto.SymEncPrimitives import sym_decrypt
 
             # Re-encrypt ciphertext
-            re_enc_ciphertext, tag = sym_encrypt(key=k, iv=iv, plaintext=ciphertext, associated_data=None, debug=debug)
+            re_dec_ciphertext = sym_decrypt(key=k, iv=iv, ciphertext=ciphertext, debug=debug)
 
             if debug:  # ONLY USE FOR DEBUG
-                print('RE-ENC CIPHERTEXT LENGTH = %d vs CIPHERTEXT LENGTH = %d' % (len(re_enc_ciphertext),
+                print('RE-DEC CIPHERTEXT LENGTH = %d vs CIPHERTEXT LENGTH = %d' % (len(re_dec_ciphertext),
                                                                                    ciphertext_length))
 
             # Check if lengths are incompatible
-            if len(re_enc_ciphertext) != ciphertext_length:
+            if len(re_dec_ciphertext) != ciphertext_length:
                 if debug:  # ONLY USE FOR DEBUG
-                    print('[ERROR] Re-encryption and original lengths incompatibility')
+                    print('[ERROR] Re-decryption and original lengths incompatibility')
                 raise Exception
 
             # Update number of re-encryptions
-            re_enc_num -= 1
+            #re_enc_num -= 1
 
             if debug:  # ONLY USE FOR DEBUG
                 from binascii import hexlify
-                print('RE-ENCRYPTED CIPHERTEXT = (%d) %s -> %s' % (len(re_enc_ciphertext), re_enc_ciphertext,
-                                                                   hexlify(re_enc_ciphertext).decode()))
-                print('UPDATE RE-ENCRYPTION NUM = %d' % re_enc_num)
+                print('RE-DECRYPTED CIPHERTEXT = (%d) %s -> %s' % (len(re_dec_ciphertext), re_dec_ciphertext,
+                                                                   hexlify(re_dec_ciphertext).decode()))
+                #print('UPDATE RE-ENCRYPTION NUM = %d' % re_enc_num)
 
             # Create struct with data to write
-            data_to_write = struct.pack('%dsH' % len(re_enc_ciphertext), re_enc_ciphertext, re_enc_num)
+            #data_to_write = struct.pack('%dsH' % len(re_dec_ciphertext), re_dec_ciphertext, re_enc_num)
+            #data_to_write = struct.pack('%ds' % len(re_dec_ciphertext), re_dec_ciphertext)
 
-            if debug:  # ONLY USE FOR DEBUG
-                print('DATA TO WRITE ON FILE = %s' % data_to_write)
+            #if debug:  # ONLY USE FOR DEBUG
+            #    print('DATA TO WRITE ON FILE = %s' % data_to_write)
 
             # Overwrite previous ciphertext and re-encryptions number
-            fin.seek(- len(re_enc_ciphertext) - H, 1)
-            fin.write(data_to_write)
+            #fin.seek(- len(re_dec_ciphertext) - H, 1)
+            fin.seek(- len(re_dec_ciphertext), 1)
+            #fin.write(data_to_write)
+            fin.write(re_dec_ciphertext)
 
     else:  # Apply punctured encryption
 
@@ -1104,11 +1026,10 @@ def remove_re_enc(ciphertext_infile=None, seed=None, k=None, re_enc_length=None,
             print('RE-ENCRYPTED BYTES TO DECRYPT = (%d) %s' % (len(bytes_to_re_enc), bytes_to_re_enc))
             print('RE-ENCRYPTED INDEXES TO DECRYPT = (%d) %s' % (len(re_enc_indexes), re_enc_indexes))
 
-        from SymEncPrimitives import sym_decrypt
+        from crypto.SymEncPrimitives import sym_decrypt
 
         # Re-encrypt ciphertext
-        dec_ciphertext = sym_decrypt(key=k, associated_data=None, iv=iv, ciphertext=bytes_to_re_enc, tag=tag,
-                                     debug=debug)
+        dec_ciphertext = sym_decrypt(key=k, iv=iv, ciphertext=bytes_to_re_enc, debug=debug)
 
         if debug:  # ONLY USE FOR DEBUG
             from binascii import hexlify
@@ -1118,118 +1039,24 @@ def remove_re_enc(ciphertext_infile=None, seed=None, k=None, re_enc_length=None,
         replace_re_enc_bytes(ciphertext_infile, dec_ciphertext, re_enc_indexes, debug)
 
         # Update number of re-encryptions
-        with(open(ciphertext_infile, 'rb+')) as fin:
-
-            from Const import H
-            import struct
-
-            # Retrieve previous re-encryptions number from file
-            fin.seek(ciphertext_offset + ciphertext_length)
-            re_enc_num = struct.unpack('H', fin.read(H))[0]
-
-            if debug:  # ONLY USE FOR DEBUG
-                print('RE-ENCRYPTION NUM = %d' % re_enc_num)
-
-            # Update number of re-encryptions
-            re_enc_num -= 1
-
-            if debug:  # ONLY USE FOR DEBUG
-                print('UPDATE RE-ENCRYPTION NUM = %d' % re_enc_num)
-
-            # Overwrite re-encryptions number
-            fin.seek(- H, 1)
-            fin.write(struct.pack('H', re_enc_num))
-
-    #     # Set default value for number of re-encrypted bits
-    #     if re_enc_length is None:
-    #
-    #         from Const import RE_ENC_LENGTH
-    #
-    #         re_enc_length = RE_ENC_LENGTH*8
-    #
-    #     if debug:  # ONLY USE FOR DEBUG
-    #         print('RE_ENC_LENGTH =', re_enc_length)
-    #
-    #     from binascii import unhexlify
-    #
-    #     # Get positions of bits to decrypt
-    #     bits_to_dec_positions = ind(s=unhexlify(seed), l=re_enc_length, dataset=range(ciphertext_length), debug=debug)
-    #
-    #     if debug:  # ONLY USE FOR DEBUG
-    #         print('INDEXES =', bits_to_dec_positions)
-    #
-    #     bits_to_dec_positions.sort()
-    #
-    #     if debug:  # ONLY USE FOR DEBUG
-    #         print('SORTED INDEXES =', bits_to_dec_positions)
-    #
-    #     # Converts ciphertext in bits string
-    #     ciphertext_bits = bin(int(ciphertext, 16))[2:]
-    #
-    #     if debug:  # ONLY USE FOR DEBUG
-    #         print('CIPHERTEXT IN BITS (%d) = %s' % (len(ciphertext_bits), ciphertext_bits))
-    #
-    #     # Check if trailing zeros have been cut
-    #     diff_bits_num = ciphertext_length - len(ciphertext_bits)
-    #
-    #     if debug:
-    #         print('%d trailing zeros have been cut in bits_to_re_enc' % diff_bits_num)
-    #
-    #     # Fill cut trailing zeros
-    #     if diff_bits_num > 0:
-    #         ciphertext_bits = '0' * diff_bits_num + ciphertext_bits
-    #
-    #     bits_to_dec = ''
-    #
-    #     # Create a string consists of the bits in the randomly generated positions
-    #     for index in bits_to_dec_positions:
-    #
-    #         if debug:  # ONLY USE FOR DEBUG
-    #             print('BIT #%d IN CIPHERTEXT = %d' % (index, int(ciphertext_bits[index])))
-    #
-    #         bits_to_dec += ciphertext_bits[index]
-    #
-    # # Check if trailing zeros have been cut
-    # diff_bits_num = re_enc_length - len(bits_to_dec)
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('%d trailing zeros have been cut in bits_to_re_enc' % diff_bits_num)
-    #
-    # # Fill cut trailing zeros
-    # if diff_bits_num > 0:
-    #     bits_to_dec = '0' * diff_bits_num + bits_to_dec
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('BITS TO DECRYPT = (%d) %s -> %s' % (len(bits_to_dec), bits_to_dec, hex(int(bits_to_dec, 2))))
-    #
-    # # Convert bits to hex for decryption
-    # bytes_to_dec = bytes.fromhex(hex(int(bits_to_dec, 2))[2:].zfill(int(len(bits_to_dec)/4)))
-    #
-    # from binascii import hexlify
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('HEX TO DECRYPT = (%d) %s -> %s' % (len(bytes_to_dec), bytes_to_dec, hexlify(bytes_to_dec)))
-    #
-    # from SymEncPrimitives import sym_decrypt
-    #
-    # # Decrypt re-encrypted bits
-    # dec_bytes = sym_decrypt(key=key, associated_data=None, iv=iv, ciphertext=bytes_to_dec, tag=tag, debug=debug)
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('DECRYPTED BYTES = (%d) %s -> %s' % (len(dec_bytes), dec_bytes, hexlify(dec_bytes).decode()))
-    #
-    # # Convert decryption result from bytes to bin
-    # dec_bits = bin(int(hexlify(dec_bytes).decode(), 16))[2:]
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('DECRYPTED BITS = (%d) %s' % (len(dec_bits), dec_bits))
-    #
-    # # Replace decrypted bits in the ciphertext
-    # dec_re_enc_ciphertext = replace_re_enc_bits(ciphertext=ciphertext, re_enc_bits=dec_bits,
-    #                                             re_enc_indexes=bits_to_dec_positions, re_enc_length=len(bits_to_dec),
-    #                                             debug=debug)
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('DECRYPTED CIPHERTEXT = (%d) %s' % (len(dec_re_enc_ciphertext), dec_re_enc_ciphertext))
-    #
-    # return dec_re_enc_ciphertext
+        # with(open(ciphertext_infile, 'rb+')) as fin:
+        #
+        #     from crypto.Const import H
+        #     import struct
+        #
+        #     # Retrieve previous re-encryptions number from file
+        #     fin.seek(ciphertext_offset + ciphertext_length)
+        #     re_enc_num = struct.unpack('H', fin.read(H))[0]
+        #
+        #     if debug:  # ONLY USE FOR DEBUG
+        #         print('RE-ENCRYPTION NUM = %d' % re_enc_num)
+        #
+        #     # Update number of re-encryptions
+        #     re_enc_num -= 1
+        #
+        #     if debug:  # ONLY USE FOR DEBUG
+        #         print('UPDATE RE-ENCRYPTION NUM = %d' % re_enc_num)
+        #
+        #     # Overwrite re-encryptions number
+        #     fin.seek(- H, 1)
+        #     fin.write(struct.pack('H', re_enc_num))

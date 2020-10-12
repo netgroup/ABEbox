@@ -1,4 +1,4 @@
-from Const import LOG_FILE_PATH, LOG_FILE_NAME
+from crypto.Const import LOG_FILE_PATH, LOG_FILE_NAME
 from datetime import datetime
 
 import os

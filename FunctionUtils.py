@@ -54,7 +54,7 @@ def read_bytes_from_file(infile=None, debug=0):
     return open(infile, 'rb').read()
 
 
-def write_bytes_on_file(outfile=None, data=None, debug=0):
+def write_bytes_on_file(outfile=None, data=None, mode='wb', offset=0, debug=0):
 
     from Log import log
 
@@ -66,7 +66,9 @@ def write_bytes_on_file(outfile=None, data=None, debug=0):
         raise Exception
 
     # Write data on the outfile
-    open(outfile, 'wb').write(data)
+    with(open(outfile, mode)) as fout:
+        fout.seek(offset)
+        fout.write(data)
 
 
 # Read JSON data from the given file.

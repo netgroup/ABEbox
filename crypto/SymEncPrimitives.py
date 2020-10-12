@@ -12,7 +12,7 @@ from Log import log
 # - debug = if 1, prints will be shown during execution; default 0, no prints are shown
 def sym_key_gen(sym_key_size=None, debug=0):
 
-    from Const import SYM_KEY_MIN_SIZE, SYM_KEY_DEFAULT_SIZE
+    from crypto.Const import SYM_KEY_MIN_SIZE, SYM_KEY_DEFAULT_SIZE
     from FunctionUtils import clamp, generate_random_string
 
     if sym_key_size is None:
@@ -43,7 +43,7 @@ def sym_key_gen(sym_key_size=None, debug=0):
 
 def generate_iv(iv_length=None):
 
-    from Const import IV_DEFAULT_SIZE
+    from crypto.Const import IV_DEFAULT_SIZE
     import os
 
     if iv_length is None:
@@ -60,7 +60,7 @@ def generate_iv(iv_length=None):
 # - associated_data = data associated to the encryption that will be authenticated but not encrypted (it must also be
 #   passed in on decryption)
 # - debug = if 1, prints will be shown during execution; default 0, no prints are shown
-def sym_encrypt(key=None, iv=None, plaintext=None, associated_data=None, debug=0):
+def sym_encrypt(key=None, iv=None, plaintext=None, debug=0):
 
     # Check if the plaintext is set
     if plaintext is None:
@@ -86,14 +86,10 @@ def sym_encrypt(key=None, iv=None, plaintext=None, associated_data=None, debug=0
     # Construct an AES-GCM Cipher object with the given key and IV
     encryptor = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend()).encryptor()
 
-    # Check if associated_data is set
-    if associated_data is not None:
-        encryptor.authenticate_additional_data(associated_data)
-
     # Encrypt the plaintext and get the associated ciphertext (GCM does not require padding)
-    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+    ciphertext = encryptor.update(plaintext)
 
-    return ciphertext, encryptor.tag
+    return ciphertext
 
 
 # Decrypt the ciphertext using AES-GCM with the given key and IV.
@@ -104,7 +100,7 @@ def sym_encrypt(key=None, iv=None, plaintext=None, associated_data=None, debug=0
 # - ciphertext = data to decrypt
 # - tag = used for authenticating the message during the decryption
 # - debug = if 1, prints will be shown during execution; default 0, no prints are shown
-def sym_decrypt(key=None, associated_data=None, iv=None, ciphertext=None, tag=None, debug=0):
+def sym_decrypt(key=None, iv=None, ciphertext=None, debug=0):
 
     # Check if the ciphertext is set
     if ciphertext is None:
@@ -128,11 +124,7 @@ def sym_decrypt(key=None, associated_data=None, iv=None, ciphertext=None, tag=No
         raise Exception
 
     # Construct a Cipher object, with the key, IV and additionally the GCM tag used for authenticating the message
-    decryptor = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=default_backend()).decryptor()
-
-    if associated_data is not None:
-        # associated_data is put back in or the tag will fail to verify when we finalize the decryptor
-        decryptor.authenticate_additional_data(associated_data)
+    decryptor = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend()).decryptor()
 
     # Decryption gets you the authenticated plaintext (if the tag does not match an InvalidTag exception will be raised)
-    return decryptor.update(ciphertext) + decryptor.finalize()
+    return decryptor.update(ciphertext)

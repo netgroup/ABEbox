@@ -1,36 +1,41 @@
 if __name__ == '__main__':
 
-    debug = 0
+    debug = 1
 
 # =================================================== SCHEME TEST =================================================== #
 
-    from crypto.ABEPrimitives import setup, keygen
-    from crypto.Const import TEST_PATH, OUTPUT_PATH
+    from FunctionUtils import clear_folder, init_logger
+    from crypto.Const import KEY_PATH, OUTPUT_PATH, TEMP_PATH, TEST_PATH
 
-    # TEST ABE KEYS SETUP
-    pk_file = 'pub_key'
-    msk_file = 'master_key'
-    setup(pk_outfile=pk_file, msk_outfile=msk_file, debug=debug)
-    print('PUB KEY FILE:')
-    with open(pk_file, 'rb') as fin:
-        for line in fin:
-            print(line)
-    print('\n\nMASTER SECRET KEY FILE:')
-    with open(msk_file, 'rb') as fin:
-        for line in fin:
-            print(line)
+    # Remove files created during previous executions
+    clear_folder(KEY_PATH)
+    clear_folder(OUTPUT_PATH)
+    clear_folder(TEMP_PATH)
 
-    # TEST ABE SECRET KEY GENERATION
-    sk_file = 'kevin_priv_key'
+    import logging
+
+    # Initialise logger
+    init_logger()
+
+    logging.warning('MAIN LOG')
+
+    import ABE_key_creator as abe
+
+    # Define ABE public and master secret keys output files
+    pk_file = KEY_PATH + 'pk_file'
+    msk_file = KEY_PATH + 'msk_file'
+
+    # Create ABE public and master secret keys
+    abe.key_setup(pk_file=pk_file, msk_file=msk_file, debug=debug)
+
+    # Define ABE secret key output file and related attributes set
+    sk_file = KEY_PATH + 'kevin_priv_key'
     attr_list = {'business_staff', 'strategy_team', '\'executive_level = 7#4\'', '\'office = 2362\'',
                  '\'hire_date = \'`date +%s`'}
-    keygen(sk_outfile=sk_file, pk_file=pk_file, msk_file=msk_file, attr_list=attr_list, debug=debug)
-    print('\n\nSECRET KEY FILE:')
-    with open(sk_file, 'rb') as fin:
-        for line in fin:
-            print(line)
 
-    plaintext_file = TEST_PATH + 'optimal_connection.png'
+    abe.secret_key_gen(sk_file=sk_file, pk_file=pk_file, msk_file=msk_file, attr_list=attr_list, debug=debug)
+
+    plaintext_file = TEST_PATH + 'test_file.txt'
     ciphertext_file = OUTPUT_PATH + 'enc_test_file'
     policy = '\'business_staff\''
     # policy = '\'(sysadmin and (hire_date < 946702800 or security_team)) or (business_staff and 2 of ' \
@@ -40,9 +45,7 @@ if __name__ == '__main__':
     import Encryptor as Enc
 
     Enc.create_encrypted_file(plaintext_infile=plaintext_file, ciphertext_outfile=ciphertext_file, pk_file=pk_file,
-                              policy=policy, debug=1)
-
-    #exit(0)
+                              policy=policy, debug=debug)
 
     # TEST CIPHERTEXT FILE RE-ENCRYPTION
     import Re_encryptor as Re_enc

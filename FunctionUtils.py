@@ -71,54 +71,27 @@ def write_bytes_on_file(outfile=None, data=None, mode='wb', offset=0, debug=0):
         fout.write(data)
 
 
-# Read JSON data from the given file.
-# Params:
-# - infile: file to read
-# - debug = if 1, prints will be shown during execution; default 0, no prints are shown
-def read_json_file(infile=None, debug=0):
+def clear_folder(folder_path=None):
 
     import os
-    from Log import log
 
-    # Check if infile is set and exists
-    if infile is None or not os.path.isfile(infile):
-        log('[ERROR] Read json file infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in read_json_file infile')
-        raise Exception
+    for filename in os.listdir(folder_path):
 
-    import json
+        file_path = os.path.join(folder_path, filename)
 
-    # Return data from the input file
-    with open(infile) as json_file:
-        return json.load(json_file)
+        if os.path.isfile(file_path) or os.path.islink(file_path):
+            os.unlink(file_path)
 
 
-# Write JSON data to the given file.
-# Params:
-# - data: JSON data to write
-# - outfile: file where data will be written
-# - debug = if 1, prints will be shown during execution; default 0, no prints are shown
-def write_json_file(data=None, outfile=None, debug=0):
+def init_logger():
 
-    from Log import log
+    from crypto.Const import LOG_FILE_PATH, LOG_FILE_NAME
+    from datetime import datetime
+    import logging
 
-    # Check if data is set
-    if data is None:
-        log('[ERROR] Write json file data exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in write_json_file data')
-        raise Exception
+    current_time = datetime.now()
+    log_file = LOG_FILE_PATH + LOG_FILE_NAME + current_time.strftime('%Y_%m_%d')
+    logging.basicConfig(filename=log_file, filemode='a', format='%(asctime)s\t[%(levelname)s] %(name)s : %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
-    # Check if file is set
-    if outfile is None:
-        log('[ERROR] Read json file outfile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in read_json_file outfile')
-        raise Exception
-
-    import json
-
-    # Write data on the output file
-    with open(outfile, 'w') as json_file:
-        return json.dump(data, json_file)
+    logging.warning('FUNCTION UTILS LOG')

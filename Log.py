@@ -16,5 +16,5 @@ def log(message):
     current_time = get_current_time()
     if not os.path.exists(LOG_FILE_PATH):
         os.makedirs(LOG_FILE_PATH)
-    log_file = open(LOG_FILE_PATH + LOG_FILE_NAME + current_time.strftime('%Y%m%d'), 'a+')
+    log_file = open(LOG_FILE_PATH + LOG_FILE_NAME + current_time.strftime('%Y%m%d'), 'a')
     log_file.write('['+str(get_current_time())+'] ' + message)

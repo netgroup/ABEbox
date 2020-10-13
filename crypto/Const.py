@@ -1,15 +1,22 @@
+"""
+This file contains all constant and default values used in the program.
+"""
+
 # LOG DIRECTORY AND FILES
 LOG_FILE_PATH = './logs/'               # FOR DEPLOY, CHANGE TO ABSOLUTE PATH
 LOG_FILE_NAME = 'log'
 
 # TEMP DIRECTORY
-TEMP_PATH = './tmp/'                   # FOR DEPLOY, CHANGE TO ABSOLUTE PATH
+TEMP_PATH = './tmp/'                    # FOR DEPLOY, CHANGE TO ABSOLUTE PATH
 
 # OUTPUT DIRECTORY
-OUTPUT_PATH = './output/'              # FOR DEPLOY, CHANGE TO ABSOLUTE PATH
+OUTPUT_PATH = './output/'               # FOR DEPLOY, CHANGE TO ABSOLUTE PATH
 
 # TEST DIRECTORY
 TEST_PATH = './test/'                   # FOR DEPLOY, CHANGE TO ABSOLUTE PATH
+
+# KEYS DIRECTORY
+KEY_PATH = './keys/'                    # FOR DEPLOY, CHANGE TO ABSOLUTE PATH
 
 # ABE
 ABE_PK_FILE = 'pub_key'

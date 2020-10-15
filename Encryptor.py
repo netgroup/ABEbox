@@ -38,9 +38,10 @@ def create_encrypted_file(plaintext_infile=None, ciphertext_outfile=None, pk_fil
         print('[ENCRYPTOR] SYM KEY = (%d) %s -> %s' % (len(sym_key), sym_key, hexlify(sym_key)))
 
     from crypto.SymEncPrimitives import generate_iv
+    from crypto.Const import IV_DEFAULT_SIZE
 
     # Create the IV for  symmetric encryption
-    iv = generate_iv()
+    iv = generate_iv(IV_DEFAULT_SIZE, debug)
 
     if debug:  # ONLY USE FOR DEBUG
         print('[ENCRYPTOR]\tIV = (%d) %s -> %s' % (len(iv), iv, hexlify(iv).decode()))

@@ -1,5 +1,5 @@
 """
-This file contains ABE scheme primitives. These functions simply wrap the command line ones provided by the libraries
+This file contains CP-ABE scheme primitives. These functions simply wrap the command line ones provided by the libraries
 cpabe and libbswabe of John Bethencourt, Amit Sahai and Brent Waters. Full details about their libraries can be found at
 the following link http://acsc.cs.utexas.edu/cpabe/.
 """

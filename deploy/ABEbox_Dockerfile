@@ -1,3 +1,7 @@
+#==================== TO DO =====================#
+# UPDATE DEPLOY FILES WITH NEW FOLDERS HIERARCHY #
+#================================================#
+
 FROM python:3.7-slim
 
 # Install necessary system and Python libraries

@@ -323,8 +323,8 @@ def remove_aont_enc(ciphertext_infile=None, plaintext_outfile=None, n=AONT_DEFAU
             print('EXCEPTION in remove_aont_enc ciphertext_infile')
         raise Exception
 
-    # Check if plaintext_outfile is set and it exists
-    if plaintext_outfile is None or not os.path.exists(plaintext_outfile):
+    # Check if plaintext_outfile is set
+    if plaintext_outfile is None:
         logging.error('remove_aont_enc plaintext_outfile exception')
         if debug:  # ONLY USE FOR DEBUG
             print('EXCEPTION in remove_aont_enc plaintext_outfile')

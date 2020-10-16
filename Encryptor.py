@@ -35,13 +35,6 @@ def create_encrypted_file(plaintext_infile=None, ciphertext_outfile=None, pk_fil
             print('EXCEPTION in create_encrypted_file plaintext_infile')
         raise Exception
 
-    # Check if ciphertext_outfile is set and it exists
-    if ciphertext_outfile is None or not os.path.exists(ciphertext_outfile):
-        logging.error('create_encrypted_file ciphertext_outfile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in create_encrypted_file ciphertext_outfile')
-        raise Exception
-
     # Check if pk_file is set and it exists
     if pk_file is None or not os.path.exists(pk_file):
         logging.error('create_encrypted_file pk_file exception')
@@ -316,10 +309,9 @@ def write_header_on_file(ciphertext_outfile=None, data=None, debug=0):
     """
 
     import logging
-    import os.path
 
-    # Check if ciphertext_outfile is set and it exists
-    if ciphertext_outfile is None or not os.path.exists(ciphertext_outfile):
+    # Check if ciphertext_outfile is set
+    if ciphertext_outfile is None:
         logging.error('write_header_on_file ciphertext_outfile exception')
         if debug:  # ONLY USE FOR DEBUG
             print('EXCEPTION in write_header_on_file ciphertext_outfile')

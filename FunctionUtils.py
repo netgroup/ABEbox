@@ -80,10 +80,9 @@ def write_bytes_on_file(outfile=None, data=None, mode='wb', offset=0, debug=0):
     """
 
     import logging
-    import os.path
 
-    # Check if outfile is set and it exists
-    if outfile is None or not os.path.exists(outfile):
+    # Check if outfile is set
+    if outfile is None:
         logging.error('write_bytes_on_file outfile exception')
         if debug:  # ONLY USE FOR DEBUG
             print('EXCEPTION in write_bytes_on_file outfile')

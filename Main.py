@@ -50,7 +50,7 @@ if __name__ == '__main__':
     # TEST CIPHERTEXT FILE RE-ENCRYPTION
     import Re_encryptor as Re_enc
 
-    Re_enc.re_encrypt(ciphertext_file, 16, pk_file, policy, 1)
+    Re_enc.apply_re_encryption(ciphertext_file, 16, pk_file, policy, debug)
 
     pk_files = [pk_file]
     sk_files = [sk_file]
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     # TEST RE-ENCRYPTED CIPHERTEXT FILE DECRYPTION
     import Decryptor as Dec
 
-    Dec.decrypt_file(ciphertext_file, pk_files, sk_files, 1)
+    Dec.decrypt_file(ciphertext_file, pk_files, sk_files, debug)
 
 # ================================================== DATABASE TEST ================================================== #
 

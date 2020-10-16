@@ -2,6 +2,9 @@
 This file contains all constant and default values used in the program.
 """
 
+# HEADER PARAMS
+VERSION = 1
+
 # LOG DIRECTORY AND FILES
 LOG_FILE_PATH = './logs/'               # FOR DEPLOY, CHANGE TO ABSOLUTE PATH
 LOG_FILE_NAME = 'log'

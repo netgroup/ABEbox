@@ -1,0 +1,5 @@
+# install fusepy
+mkdir basedir mountdir
+python passthrough.py basedir mountdir
+# you can read/write files on mountdir
+# find encripted files on basedir

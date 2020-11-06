@@ -1,5 +1,13 @@
-# install fusepy
-mkdir basedir mountdir
-python passthrough.py basedir mountdir
+# INSTALL
+
+- install requirements 
+- mkdir basedir mountdir
+
+# LAUNCH
+
+python3 passthrough.py basedir mountdir
 # you can read/write files on mountdir
 # find encripted files on basedir
+ 
+# to unmount the dir (in case)
+# fusermount -u mountdir

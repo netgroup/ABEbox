@@ -1,12 +1,14 @@
 import sys
 import os
-import secrets
+#import secrets
 import tempfile
 import json
 from pathlib import Path
 
-from Crypto.Cipher import AES
-from charm.toolbox.pairinggroup import PairingGroup, GT
+#from Crypto.Cipher import AES
+from charm.toolbox.pairinggroup import PairingGroup, GT 
+from charm.core.math.pairing import hashPair as extractor
+from charm.toolbox.node import BinNode
 from charm.core.engine.util import objectToBytes, bytesToObject
 from ABE.ac17 import AC17CPABE
 
@@ -22,9 +24,6 @@ logger.info("started")
 
 class Abebox(Passthrough):
     def __init__(self, root):
-        self.SYM_KEY_LEN = 16
-        self.SYM_NONCE_LEN = 8 
-
         self.CHUNK_SIZE = 1024
 
         #load abe key
@@ -58,9 +57,11 @@ class Abebox(Passthrough):
     def _create_meta(self):
         """Create meta information about the file with keys
         """
+        # https://jhuisi.github.io/charm/toolbox/symcrypto.html#symcrypto.SymmetricCryptoAbstraction
+        el = self.pairing_group.random(GT)
         self.meta = {
-                'sym_key': secrets.token_hex(self.SYM_KEY_LEN),
-                'sym_nonce': secrets.token_hex(self.SYM_NONCE_LEN),
+                'el': el,
+                'sym_key': extractor(el),
                 'policy': '(DEPT1 and TEAM1)', # hardcoded - TBD
         }
         return self.meta
@@ -72,36 +73,45 @@ class Abebox(Passthrough):
         """
         try:
             print("try to open metafile: " + metafile)
-            with open(metafile) as f:
+            with open(metafile, 'r') as f:
                 enc_meta = json.load(f)
         except FileNotFoundError:
             print("Metafile not found")
             # TBD: try to recover?
 
-        enc_sym_key = bytearray.fromhex(enc_meta['enc_sym_key'])
-        # decrypt the sym key
-        sym_key = cpabe.decrypt(self.abe_pk, enc_sym_key, self.abe_sk)
+        enc_el = bytesToObject(bytearray.fromhex(enc_meta['enc_el']), self.pairing_group)
+        policy = BinNode(enc_meta['policy'])
+        enc_el['policy'] = policy
+        # decrypt the group element with ABE
+        el = self.cpabe.decrypt(self.abe_pk, enc_el, self.abe_sk)
+
+        # load all in clear
+        self.meta = {
+                'el': el,
+                'sym_key': extractor(el),
+                'policy': policy, #'(DEPT1 and TEAM1)', # hardcoded - TBD
+        }
 
         # create a symmetric cypher
-        self.sym_cipher = AES.new(self.sym_key, AES.MODE_CTR, nonce=bytearray.fromhex(self.finfo['nonce']))
+        self.sym_cipher = SymmetricCryptoAbstraction(self.meta['sym_key'])
 
-        self.meta = {
-                'sym_key': enc_meta,
-                'nonce': bytearray.fromhex(enc_meta['nonce']),
-                'policy': '(DEPT1 and TEAM1)', # hardcoded - TBD
-        }
         return self.finfo
 
     def _dump_meta(self, metafile):
         """Dump the meta information on the meta file
         """
-        enc_sym_key = self.cpabe.encrypt(self.abe_pk, self.meta['sym_key'], self.meta['policy'])
+        print("dumping metadata on file ", metafile)
+        # we need to handle separately enc_el (charm.toolbox.node.BinNode) as there is no serializer
+        enc_el = self.cpabe.encrypt(self.abe_pk, self.meta['el'], self.meta['policy'])
+        policy = enc_el.pop('policy')
+        
+        # write encrypted data
         enc_meta = {
-            'sym_key': enc_sym_key,        
-            'nonce': self.meta['nonce'],        
-            'policy': '(DEPT1 and TEAM1)', # hardcoded - TBD
+            'policy': str(policy), 
+            'enc_el': objectToBytes(enc_el, self.pairing_group).hex(),        
         }
-        json.dump(metafile, enc_meta)
+        with open(metafile, 'w') as f:
+            json.dump(enc_meta, f)
         return enc_meta
 
     # Fuse callbacks
@@ -117,8 +127,8 @@ class Abebox(Passthrough):
         self.is_new = False
 
         # load meta information
-        self.dirname, self.filename = os.path.split(os.path.dirname(self._full_path(path))) 
-        print("dirname {} - filename {}", self.dirname, self.filename)
+        self.dirname, self.filename = os.path.split(self._full_path(path))
+
         self._load_meta(self.dirname + '/.abebox/' + self.filename)
 
         # open a temporary file
@@ -129,17 +139,21 @@ class Abebox(Passthrough):
         # decrypt the file with the sym key and write it on the temporary file
         with open(self._full_path(path), 'r') as enc_fp:
             for chunk in self._read_in_chunks(enc_fp, self.CHUNK_SIZE):
-                self.temp_fp.write(self.cipher.decrypt(chunk))
+                self.temp_fp.write(self.sym_cipher.decrypt(chunk))
 
         return self.temp_fp.fileno()
         #return super(Abebox, self).open(path, flags)
         
     def create(self, path, mode, fi=None):
         print("Creating file ", path)
+        print("full path", self._full_path(path))
         # open a temporary file
         self.temp_fp = tempfile.TemporaryFile() # could be more secure with mkstemp() 
 
-        self.dirname, self.filename = os.path.split(os.path.dirname(self._full_path(path))) 
+        self.dirname, self.filename = os.path.split(self._full_path(path))
+
+        print("Dirname: ", self.dirname)
+        print("file name: ", self.filename)
         self.is_new = True
 
         self._create_meta()
@@ -153,11 +167,13 @@ class Abebox(Passthrough):
         self.temp_fp.seek(0)
         with open(self._full_path(path), 'w') as enc_fp:
             for chunk in self._read_in_chunks(self.temp_fp, self.CHUNK_SIZE):
-                enc_fp.write(self.cipher.encrypt(chunk))
+                enc_fp.write(self.sym_cipher.encrypt(chunk))
 
-        self._dump_meta(self.dirname + '/.abebox/' + self.filename)
+        meta_directory = self.dirname + '/.abebox/' 
+        if not os.path.exists(meta_directory):
+            os.makedirs(meta_directory)
+        self._dump_meta(meta_directory + self.filename)
 
-        self._create_meta(self.dirname + '/.abebox/' + self.filename)
 
         # ret = os.close(self.temp_fp) # temporary files are automatically deleted
 

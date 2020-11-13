@@ -97,18 +97,22 @@ class Passthrough(Operations):
     # ============
 
     def open(self, path, flags):
+        print("open")
         full_path = self._full_path(path)
         return os.open(full_path, flags)
 
     def create(self, path, mode, fi=None):
+        print("create")
         full_path = self._full_path(path)
         return os.open(full_path, os.O_WRONLY | os.O_CREAT, mode)
 
     def read(self, path, length, offset, fh):
+        print("read")
         os.lseek(fh, offset, os.SEEK_SET)
         return os.read(fh, length)
 
     def write(self, path, buf, offset, fh):
+        print("write")
         os.lseek(fh, offset, os.SEEK_SET)
         return os.write(fh, buf)
 
@@ -118,12 +122,15 @@ class Passthrough(Operations):
             f.truncate(length)
 
     def flush(self, path, fh):
+        print("flush")
         return os.fsync(fh)
 
     def release(self, path, fh):
+        print("release")
         return os.close(fh)
 
     def fsync(self, path, fdatasync, fh):
+        print("fsync")
         return self.flush(path, fh)
 
 

@@ -1,16 +1,18 @@
 import sys
 import os
-#import secrets
+import secrets
 import tempfile
 import json
 from pathlib import Path
 
-#from Crypto.Cipher import AES
+from Crypto.Cipher import AES
 from charm.toolbox.pairinggroup import PairingGroup, GT 
 from charm.core.math.pairing import hashPair as extractor
-from charm.toolbox.node import BinNode
+#from charm.toolbox.node import BinNode
+from charm.toolbox.policytree import PolicyParser
 from charm.core.engine.util import objectToBytes, bytesToObject
 from ABE.ac17 import AC17CPABE
+from charm.toolbox.symcrypto import SymmetricCryptoAbstraction
 
 from fuse import FUSE, FuseOSError, Operations
 
@@ -59,11 +61,16 @@ class Abebox(Passthrough):
         """
         # https://jhuisi.github.io/charm/toolbox/symcrypto.html#symcrypto.SymmetricCryptoAbstraction
         el = self.pairing_group.random(GT)
+
         self.meta = {
                 'el': el,
                 'sym_key': extractor(el),
+                'nonce': secrets.token_bytes(8),
                 'policy': '(DEPT1 and TEAM1)', # hardcoded - TBD
         }
+
+        #self.sym_cipher = SymmetricCryptoAbstraction(self.meta['sym_key'])
+
         return self.meta
         
 
@@ -80,22 +87,28 @@ class Abebox(Passthrough):
             # TBD: try to recover?
 
         enc_el = bytesToObject(bytearray.fromhex(enc_meta['enc_el']), self.pairing_group)
-        policy = BinNode(enc_meta['policy'])
+        policy = PolicyParser().parse(enc_meta['policy'])
         enc_el['policy'] = policy
         # decrypt the group element with ABE
+        print("decrypt")
+        print("pk: ", self.abe_pk)
+        print("sk: ", self.abe_sk)
+        print("policy: ", enc_el['policy'])
+
         el = self.cpabe.decrypt(self.abe_pk, enc_el, self.abe_sk)
 
         # load all in clear
         self.meta = {
                 'el': el,
                 'sym_key': extractor(el),
-                'policy': policy, #'(DEPT1 and TEAM1)', # hardcoded - TBD
+                'nonce': bytearray.fromhex(enc_meta['nonce']),
+                'policy': enc_meta['policy'], #'(DEPT1 and TEAM1)', # hardcoded - TBD
         }
 
         # create a symmetric cypher
-        self.sym_cipher = SymmetricCryptoAbstraction(self.meta['sym_key'])
+        #self.sym_cipher = SymmetricCryptoAbstraction(self.meta['sym_key'])
 
-        return self.finfo
+        return self.meta
 
     def _dump_meta(self, metafile):
         """Dump the meta information on the meta file
@@ -108,6 +121,7 @@ class Abebox(Passthrough):
         # write encrypted data
         enc_meta = {
             'policy': str(policy), 
+            'nonce': self.meta['nonce'].hex(),
             'enc_el': objectToBytes(enc_el, self.pairing_group).hex(),        
         }
         with open(metafile, 'w') as f:
@@ -117,10 +131,12 @@ class Abebox(Passthrough):
     # Fuse callbacks
 
     def read(self, path, length, offset, fh):
-        return super(Abebox, self).read(path, length, offset, self.temp_fp)
+        print("reading ", length, " bytes on tmp fs ", self.temp_fp)
+        return super(Abebox, self).read(path, length, offset, self.temp_fp.fileno())
     
     def write(self, path, buf, offset, fh):
-        return super(Abebox, self).write(path, buf, offset, self.temp_fp)
+        print("writing ", buf, " on ", path, " on tmp fs ", self.temp_fp)
+        return super(Abebox, self).write(path, buf, offset, self.temp_fp.fileno())
 
     def open(self, path, flags):
         print("Opening file ", path)
@@ -132,23 +148,40 @@ class Abebox(Passthrough):
         self._load_meta(self.dirname + '/.abebox/' + self.filename)
 
         # open a temporary file
-        self.temp_fp = tempfile.TemporaryFile() # could be more secure with mkstemp()
+        self.temp_fp = tempfile.NamedTemporaryFile() # could be more secure with mkstemp()
+        print("Created tempfile: ", self.temp_fp.name)
+
+        # open real file
+        full_path = self._full_path(path)
+        #enc_fp = os.open(full_path, flags)
+        enc_fp = open(full_path, 'rb+')
+
 
         # TBD reverse AONT and remove re-encryption
 
         # decrypt the file with the sym key and write it on the temporary file
-        with open(self._full_path(path), 'r') as enc_fp:
-            for chunk in self._read_in_chunks(enc_fp, self.CHUNK_SIZE):
-                self.temp_fp.write(self.sym_cipher.decrypt(chunk))
+        sym_cipher = AES.new(self.meta['sym_key'][:16], AES.MODE_CTR, nonce=self.meta['nonce'])
+        #with open(self._full_path(path), 'rb') as enc_fp:
+        for chunk in self._read_in_chunks(enc_fp, self.CHUNK_SIZE):
+            x = sym_cipher.decrypt(chunk)
+            print("got chunk in open: ", x)
+            self.temp_fp.write(x)
+            #self.temp_fp.write(sym_cipher.decrypt(chunk))
 
-        return self.temp_fp.fileno()
+        enc_fp.seek(0)
+        self.temp_fp.seek(0)
+        #os.lseek(enc_fp, 0, 0)
+        return enc_fp.fileno()
+
+        #return self.temp_fp.fileno()
         #return super(Abebox, self).open(path, flags)
         
     def create(self, path, mode, fi=None):
         print("Creating file ", path)
         print("full path", self._full_path(path))
         # open a temporary file
-        self.temp_fp = tempfile.TemporaryFile() # could be more secure with mkstemp() 
+        self.temp_fp = tempfile.NamedTemporaryFile() # could be more secure with mkstemp() 
+        print("Created tempfile: ", self.temp_fp.name)
 
         self.dirname, self.filename = os.path.split(self._full_path(path))
 
@@ -158,24 +191,77 @@ class Abebox(Passthrough):
 
         self._create_meta()
 
-        return self.temp_fp.fileno()
+        #return self.temp_fp.fileno()
+        #return super(Abebox, self).create(path, mode, fi)
+        full_path = self._full_path(path)
+        return os.open(full_path, os.O_WRONLY | os.O_CREAT, mode)
 
 
     def release(self, path, fh):
         print("Releasing file ", path)
         # pour the temp file in the dest folder
+        sym_cipher = AES.new(self.meta['sym_key'][:16], AES.MODE_CTR, nonce=self.meta['nonce'])
+        # rewind file, adjust read_in_chucnk 
+        print("Release: closing, removing and open again file ", self._full_path(path))
+        os.close(fh)
+        print("close done")
+        os.remove(self._full_path(path))
+        print("rm done")
+        #fh = os.open(self._full_path(path), os.O_WRONLY | os.O_CREAT)
+        print("re-opening file")
+        fh = open(self._full_path(path), 'wb+')
+        print("re-opening file done")
+
+        #print("seeking fh")
+        #os.lseek(fh, 0, os.SEEK_SET)
+
         self.temp_fp.seek(0)
-        with open(self._full_path(path), 'w') as enc_fp:
-            for chunk in self._read_in_chunks(self.temp_fp, self.CHUNK_SIZE):
-                enc_fp.write(self.sym_cipher.encrypt(chunk))
+        print("Temporary file has size : ", self.temp_fp.seek(0, os.SEEK_END))
+        self.temp_fp.seek(0)
+
+        for chunk in self._read_in_chunks(self.temp_fp, self.CHUNK_SIZE):
+            print("release - read chunk" , chunk)
+            #os.write(fh, sym_cipher.encrypt(chunk))
+            fh.write(sym_cipher.encrypt(chunk))
+            print("chunk has been written on file ", fh)
+        #with open(self._full_path(path), 'wb+') as enc_fp:
+        #    print("Release: file opened with fp ", enc_fp)
+        #    print("release: writing back from tempfile", self.temp_fp.file.name)
+        #    for chunk in self._read_in_chunks(self.temp_fp, self.CHUNK_SIZE):
+        #        print("release - read chunk" , chunk)
+        #        enc_fp.write(sym_cipher.encrypt(chunk))
+        print("Closing fs")
+        fh.close()
+        print("Closed")
+
 
         meta_directory = self.dirname + '/.abebox/' 
         if not os.path.exists(meta_directory):
             os.makedirs(meta_directory)
+        print("dumping meta on :", meta_directory + self.filename)
         self._dump_meta(meta_directory + self.filename)
-
-
+        return
+        #return os.close(fh)
+        #return fh.close()
+        #return super(Abebox, self).release(path, fh) #os close doesn't return
         # ret = os.close(self.temp_fp) # temporary files are automatically deleted
+
+    def truncate(self, path, length, fh=None):
+        #full_path = self._full_path(path)
+        self.temp_fp.truncate(length)
+        #with open(full_path, 'r+') as f:
+        #    f.truncate(length)
+
+    def flush(self, path, fh):
+        print("flushing")
+        return os.fsync(self.temp_fp)
+        #return os.fsync(fh)
+
+    def fsync(self, path, fdatasync, fh):
+        print("fsync")
+        #return self.flush(path, fh)
+        return self.flush(path, self.temp_fp)
+
 
 
 def main(mountpoint, root):

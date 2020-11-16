@@ -1,0 +1,7 @@
+Flask
+flask-restx
+dramatiq
+rabbitmq
+watch
+pika
+cryptography

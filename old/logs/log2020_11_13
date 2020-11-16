@@ -1,0 +1,8 @@
+2020-11-13 15:24:13	[WARNING] root : MAIN LOG
+2020-11-13 15:24:13	[INFO] root : setup command = cpabe-setup -p ./keys/pk_file -m ./keys/msk_file
+2020-11-13 15:24:13	[INFO] root : keygen command = cpabe-keygen -o ./keys/kevin_priv_key ./keys/pk_file ./keys/msk_file 'office = 2362' 'hire_date = '`date +%s` strategy_team 'executive_level = 7#4' business_staff
+2020-11-13 15:24:13	[INFO] root : encrypt command = cpabe-enc -o ./tmp/enc_sym_key ./keys/pk_file ./tmp/sym_key 'business_staff'
+2020-11-13 18:22:15	[WARNING] root : MAIN LOG
+2020-11-13 18:22:15	[INFO] root : setup command = cpabe-setup -p ./keys/pk_file -m ./keys/msk_file
+2020-11-13 18:22:15	[INFO] root : keygen command = cpabe-keygen -o ./keys/kevin_priv_key ./keys/pk_file ./keys/msk_file business_staff 'office = 2362' 'executive_level = 7#4' strategy_team 'hire_date = '`date +%s`
+2020-11-13 18:22:16	[INFO] root : encrypt command = cpabe-enc -o ./tmp/enc_sym_key ./keys/pk_file ./tmp/sym_key 'business_staff'

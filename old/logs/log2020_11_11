@@ -1,0 +1,361 @@
+2020-11-11 17:38:04	[INFO] root : Parsing starting input arguments...
+2020-11-11 17:38:04	[INFO] root : Starting input arguments parsed!
+2020-11-11 17:38:04	[INFO] root : Verifying IP address format...
+2020-11-11 17:38:04	[INFO] root : IP address is valid!
+2020-11-11 17:38:04	[INFO] root : Starting Flask web server...
+2020-11-11 17:38:04	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 17:38:07	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:38:07	[INFO] root : Getting request body...
+2020-11-11 17:38:07	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:38:07	[INFO] root : Obtaining request body...
+2020-11-11 17:38:07	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:38:07] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:38:21	[INFO] root : Parsing starting input arguments...
+2020-11-11 17:38:21	[INFO] root : Starting input arguments parsed!
+2020-11-11 17:38:21	[INFO] root : Verifying IP address format...
+2020-11-11 17:38:21	[INFO] root : IP address is valid!
+2020-11-11 17:38:21	[INFO] root : Starting Flask web server...
+2020-11-11 17:38:21	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 17:38:24	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:38:24	[INFO] root : Getting request body...
+2020-11-11 17:38:24	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:38:24	[INFO] root : Obtaining request body...
+2020-11-11 17:38:24	[ERROR] root : Missing params!
+2020-11-11 17:38:24	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:38:24] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:39:30	[INFO] root : Parsing starting input arguments...
+2020-11-11 17:39:30	[INFO] root : Starting input arguments parsed!
+2020-11-11 17:39:30	[INFO] root : Verifying IP address format...
+2020-11-11 17:39:30	[INFO] root : IP address is valid!
+2020-11-11 17:39:30	[INFO] root : Starting Flask web server...
+2020-11-11 17:39:30	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 17:39:33	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:39:33	[INFO] root : Getting request body...
+2020-11-11 17:39:33	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:39:33	[INFO] root : Obtaining request body...
+2020-11-11 17:39:33	[ERROR] root : Missing params!
+2020-11-11 17:39:33	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:39:33] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:41:08	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:41:08	[INFO] root : Getting request body...
+2020-11-11 17:41:08	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:41:08	[INFO] root : Obtaining request body...
+2020-11-11 17:41:08	[ERROR] root : Missing params!
+2020-11-11 17:41:08	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:41:08] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:44:20	[INFO] root : Parsing starting input arguments...
+2020-11-11 17:44:20	[INFO] root : Starting input arguments parsed!
+2020-11-11 17:44:20	[INFO] root : Verifying IP address format...
+2020-11-11 17:44:20	[INFO] root : IP address is valid!
+2020-11-11 17:44:20	[INFO] root : Starting Flask web server...
+2020-11-11 17:44:20	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 17:44:27	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:44:27	[INFO] root : Getting request body...
+2020-11-11 17:44:27	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:44:27	[INFO] root : Obtaining request body...
+2020-11-11 17:44:27	[ERROR] root : Missing params!
+2020-11-11 17:44:27	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:44:27] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:44:49	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:44:49	[INFO] root : Getting request body...
+2020-11-11 17:44:49	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:44:49	[INFO] root : Obtaining request body...
+2020-11-11 17:44:49	[ERROR] root : Missing params!
+2020-11-11 17:44:49	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:44:49] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:46:00	[INFO] root : Parsing starting input arguments...
+2020-11-11 17:46:00	[INFO] root : Starting input arguments parsed!
+2020-11-11 17:46:00	[INFO] root : Verifying IP address format...
+2020-11-11 17:46:00	[INFO] root : IP address is valid!
+2020-11-11 17:46:00	[INFO] root : Starting Flask web server...
+2020-11-11 17:46:00	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 17:46:02	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:46:02	[INFO] root : Getting request body...
+2020-11-11 17:46:02	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:46:02	[INFO] root : Obtaining request body...
+2020-11-11 17:46:02	[ERROR] root : Missing params!
+2020-11-11 17:46:02	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:46:02] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:46:18	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:46:18	[INFO] root : Getting request body...
+2020-11-11 17:46:18	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:46:18	[INFO] root : Obtaining request body...
+2020-11-11 17:46:18	[ERROR] root : Missing params!
+2020-11-11 17:46:18	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:46:18] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:53:42	[INFO] root : Parsing starting input arguments...
+2020-11-11 17:53:42	[INFO] root : Starting input arguments parsed!
+2020-11-11 17:53:42	[INFO] root : Verifying IP address format...
+2020-11-11 17:53:42	[INFO] root : IP address is valid!
+2020-11-11 17:53:42	[INFO] root : Starting Flask web server...
+2020-11-11 17:53:42	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 17:53:45	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:53:45	[INFO] root : Getting request body...
+2020-11-11 17:53:45	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:53:45	[INFO] root : Obtaining request body...
+2020-11-11 17:53:45	[ERROR] root : Missing params!
+2020-11-11 17:53:45	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:53:45] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:54:49	[INFO] root : Parsing starting input arguments...
+2020-11-11 17:54:49	[INFO] root : Starting input arguments parsed!
+2020-11-11 17:54:49	[INFO] root : Verifying IP address format...
+2020-11-11 17:54:49	[INFO] root : IP address is valid!
+2020-11-11 17:54:49	[INFO] root : Starting Flask web server...
+2020-11-11 17:54:49	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 17:54:55	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:54:55	[INFO] root : Getting request body...
+2020-11-11 17:54:55	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:54:55	[INFO] root : Obtaining request body...
+2020-11-11 17:54:55	[ERROR] root : Missing params!
+2020-11-11 17:54:55	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:54:55] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:56:09	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:56:09	[INFO] root : Getting request body...
+2020-11-11 17:56:09	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:56:09	[INFO] root : Obtaining request body...
+2020-11-11 17:56:09	[ERROR] root : Missing params!
+2020-11-11 17:56:09	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:56:09] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:56:14	[INFO] root : Parsing starting input arguments...
+2020-11-11 17:56:14	[INFO] root : Starting input arguments parsed!
+2020-11-11 17:56:14	[INFO] root : Verifying IP address format...
+2020-11-11 17:56:14	[INFO] root : IP address is valid!
+2020-11-11 17:56:14	[INFO] root : Starting Flask web server...
+2020-11-11 17:56:14	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 17:56:20	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:56:20	[INFO] root : Getting request body...
+2020-11-11 17:56:20	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:56:20	[INFO] root : Obtaining request body...
+2020-11-11 17:56:20	[ERROR] root : Missing params!
+2020-11-11 17:56:20	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:56:20] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:57:25	[INFO] root : Parsing starting input arguments...
+2020-11-11 17:57:25	[INFO] root : Starting input arguments parsed!
+2020-11-11 17:57:25	[INFO] root : Verifying IP address format...
+2020-11-11 17:57:25	[INFO] root : IP address is valid!
+2020-11-11 17:57:25	[INFO] root : Starting Flask web server...
+2020-11-11 17:57:25	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 17:57:37	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:57:37	[INFO] root : Getting request body...
+2020-11-11 17:57:37	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:57:37	[INFO] root : Obtaining request body...
+2020-11-11 17:57:37	[ERROR] root : Missing params!
+2020-11-11 17:57:37	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:57:37] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:57:48	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:57:48	[INFO] root : Getting request body...
+2020-11-11 17:57:48	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:57:48	[INFO] root : Obtaining request body...
+2020-11-11 17:57:48	[ERROR] root : Missing params!
+2020-11-11 17:57:48	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:57:48] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:58:37	[INFO] root : Parsing starting input arguments...
+2020-11-11 17:58:37	[INFO] root : Starting input arguments parsed!
+2020-11-11 17:58:37	[INFO] root : Verifying IP address format...
+2020-11-11 17:58:37	[INFO] root : IP address is valid!
+2020-11-11 17:58:37	[INFO] root : Starting Flask web server...
+2020-11-11 17:58:37	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 17:58:39	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:58:39	[INFO] root : Getting request body...
+2020-11-11 17:58:39	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:58:39	[INFO] root : Obtaining request body...
+2020-11-11 17:58:39	[ERROR] root : Missing params!
+2020-11-11 17:58:39	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:58:39] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 17:58:45	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:58:45	[INFO] root : Getting request body...
+2020-11-11 17:58:45	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 17:58:45	[INFO] root : Obtaining request body...
+2020-11-11 17:58:45	[ERROR] root : Missing params!
+2020-11-11 17:58:45	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 17:58:45] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 18:01:11	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:01:11	[INFO] root : Getting request body...
+2020-11-11 18:01:11	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:01:11	[INFO] root : Obtaining request body...
+2020-11-11 18:01:11	[ERROR] root : Missing params!
+2020-11-11 18:01:11	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 18:01:11] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 18:05:23	[INFO] root : Parsing starting input arguments...
+2020-11-11 18:05:23	[INFO] root : Starting input arguments parsed!
+2020-11-11 18:05:23	[INFO] root : Verifying IP address format...
+2020-11-11 18:05:23	[INFO] root : IP address is valid!
+2020-11-11 18:05:23	[INFO] root : Starting Flask web server...
+2020-11-11 18:05:23	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 18:05:28	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:05:28	[INFO] root : Getting request body...
+2020-11-11 18:05:28	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:05:28	[INFO] root : Obtaining request body...
+2020-11-11 18:05:28	[ERROR] web_server : Exception on /send_re_enc_info [POST]
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 2447, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 1952, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/serse/.local/lib/python3.8/site-packages/flask_restx/api.py", line 639, in error_router
+    return original_handler(e)
+  File "/home/serse/.local/lib/python3.8/site-packages/flask_restx/api.py", line 639, in error_router
+    return original_handler(e)
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 1821, in handle_user_exception
+    reraise(exc_type, exc_value, tb)
+  File "/usr/local/lib/python3.8/dist-packages/flask/_compat.py", line 39, in reraise
+    raise value
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 1950, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 1936, in dispatch_request
+    return self.view_functions[rule.endpoint](**req.view_args)
+  File "/home/serse/.local/lib/python3.8/site-packages/flask_restx/api.py", line 375, in wrapper
+    resp = resource(*args, **kwargs)
+  File "/usr/local/lib/python3.8/dist-packages/flask/views.py", line 89, in view
+    return self.dispatch_request(*args, **kwargs)
+  File "/home/serse/.local/lib/python3.8/site-packages/flask_restx/resource.py", line 44, in dispatch_request
+    resp = meth(*args, **kwargs)
+  File "/home/serse/PycharmProjects/ABEbox/re_enc_engine/web_server.py", line 224, in post
+    for key in re_enc_data[const.RE_ENC_DATA].keys():
+AttributeError: 'str' object has no attribute 'keys'
+2020-11-11 18:05:28	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 18:05:28] "[35m[1mPOST /send_re_enc_info HTTP/1.1[0m" 500 -
+2020-11-11 18:05:59	[INFO] root : Parsing starting input arguments...
+2020-11-11 18:05:59	[INFO] root : Starting input arguments parsed!
+2020-11-11 18:05:59	[INFO] root : Verifying IP address format...
+2020-11-11 18:05:59	[INFO] root : IP address is valid!
+2020-11-11 18:05:59	[INFO] root : Starting Flask web server...
+2020-11-11 18:05:59	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 18:06:02	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:06:02	[INFO] root : Getting request body...
+2020-11-11 18:06:02	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:06:02	[INFO] root : Obtaining request body...
+2020-11-11 18:06:02	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 18:06:02] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 18:06:08	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:06:08	[INFO] root : Getting request body...
+2020-11-11 18:06:08	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:06:08	[INFO] root : Obtaining request body...
+2020-11-11 18:06:08	[ERROR] web_server : Exception on /send_re_enc_info [POST]
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 2447, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 1952, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/serse/.local/lib/python3.8/site-packages/flask_restx/api.py", line 639, in error_router
+    return original_handler(e)
+  File "/home/serse/.local/lib/python3.8/site-packages/flask_restx/api.py", line 639, in error_router
+    return original_handler(e)
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 1821, in handle_user_exception
+    reraise(exc_type, exc_value, tb)
+  File "/usr/local/lib/python3.8/dist-packages/flask/_compat.py", line 39, in reraise
+    raise value
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 1950, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 1936, in dispatch_request
+    return self.view_functions[rule.endpoint](**req.view_args)
+  File "/home/serse/.local/lib/python3.8/site-packages/flask_restx/api.py", line 375, in wrapper
+    resp = resource(*args, **kwargs)
+  File "/usr/local/lib/python3.8/dist-packages/flask/views.py", line 89, in view
+    return self.dispatch_request(*args, **kwargs)
+  File "/home/serse/.local/lib/python3.8/site-packages/flask_restx/resource.py", line 44, in dispatch_request
+    resp = meth(*args, **kwargs)
+  File "/home/serse/PycharmProjects/ABEbox/re_enc_engine/web_server.py", line 224, in post
+    for key in json.loads(re_enc_data[const.RE_ENC_DATA]).keys():
+  File "/usr/lib/python3.8/json/__init__.py", line 357, in loads
+    return _default_decoder.decode(s)
+  File "/usr/lib/python3.8/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+  File "/usr/lib/python3.8/json/decoder.py", line 353, in raw_decode
+    obj, end = self.scan_once(s, idx)
+json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+2020-11-11 18:06:08	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 18:06:08] "[35m[1mPOST /send_re_enc_info HTTP/1.1[0m" 500 -
+2020-11-11 18:06:31	[INFO] root : Parsing starting input arguments...
+2020-11-11 18:06:31	[INFO] root : Starting input arguments parsed!
+2020-11-11 18:06:31	[INFO] root : Verifying IP address format...
+2020-11-11 18:06:31	[INFO] root : IP address is valid!
+2020-11-11 18:06:31	[INFO] root : Starting Flask web server...
+2020-11-11 18:06:31	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 18:06:36	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:06:36	[INFO] root : Getting request body...
+2020-11-11 18:06:36	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:06:36	[INFO] root : Obtaining request body...
+2020-11-11 18:06:36	[ERROR] web_server : Exception on /send_re_enc_info [POST]
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 2447, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 1952, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/serse/.local/lib/python3.8/site-packages/flask_restx/api.py", line 639, in error_router
+    return original_handler(e)
+  File "/home/serse/.local/lib/python3.8/site-packages/flask_restx/api.py", line 639, in error_router
+    return original_handler(e)
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 1821, in handle_user_exception
+    reraise(exc_type, exc_value, tb)
+  File "/usr/local/lib/python3.8/dist-packages/flask/_compat.py", line 39, in reraise
+    raise value
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 1950, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/usr/local/lib/python3.8/dist-packages/flask/app.py", line 1936, in dispatch_request
+    return self.view_functions[rule.endpoint](**req.view_args)
+  File "/home/serse/.local/lib/python3.8/site-packages/flask_restx/api.py", line 375, in wrapper
+    resp = resource(*args, **kwargs)
+  File "/usr/local/lib/python3.8/dist-packages/flask/views.py", line 89, in view
+    return self.dispatch_request(*args, **kwargs)
+  File "/home/serse/.local/lib/python3.8/site-packages/flask_restx/resource.py", line 44, in dispatch_request
+    resp = meth(*args, **kwargs)
+  File "/home/serse/PycharmProjects/ABEbox/re_enc_engine/web_server.py", line 226, in post
+    for key in json.loads(re_enc_data[const.RE_ENC_DATA]).keys():
+  File "/usr/lib/python3.8/json/__init__.py", line 357, in loads
+    return _default_decoder.decode(s)
+  File "/usr/lib/python3.8/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+  File "/usr/lib/python3.8/json/decoder.py", line 353, in raw_decode
+    obj, end = self.scan_once(s, idx)
+json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+2020-11-11 18:06:36	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 18:06:36] "[35m[1mPOST /send_re_enc_info HTTP/1.1[0m" 500 -
+2020-11-11 18:07:41	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:07:41	[INFO] root : Getting request body...
+2020-11-11 18:07:41	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:07:41	[INFO] root : Obtaining request body...
+2020-11-11 18:07:41	[ERROR] root : Missing params!
+2020-11-11 18:07:41	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 18:07:41] "[31m[1mPOST /send_re_enc_info HTTP/1.1[0m" 400 -
+2020-11-11 18:08:38	[INFO] root : Parsing starting input arguments...
+2020-11-11 18:08:38	[INFO] root : Starting input arguments parsed!
+2020-11-11 18:08:38	[INFO] root : Verifying IP address format...
+2020-11-11 18:08:38	[INFO] root : IP address is valid!
+2020-11-11 18:08:38	[INFO] root : Starting Flask web server...
+2020-11-11 18:08:38	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 18:08:42	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:08:42	[INFO] root : Getting request body...
+2020-11-11 18:08:42	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:08:42	[INFO] root : Obtaining request body...
+2020-11-11 18:08:42	[INFO] root : Request body successfully obtained!
+2020-11-11 18:08:42	[INFO] root : Saving sent public key files...
+2020-11-11 18:08:42	[INFO] root : Public key files saved!
+2020-11-11 18:08:42	[INFO] root : Starting re-encryption process...
+2020-11-11 18:08:42	[INFO] pika.adapters.utils.connection_workflow : Pika version 1.1.0 connecting to ('127.0.0.1', 5672)
+2020-11-11 18:08:42	[INFO] pika.adapters.utils.io_services_utils : Socket connected: <socket.socket fd=9, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('127.0.0.1', 56622), raddr=('127.0.0.1', 5672)>
+2020-11-11 18:08:42	[INFO] pika.adapters.utils.connection_workflow : Streaming transport linked up: (<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7f91edf4f7c0>, _StreamingProtocolShim: <SelectConnection PROTOCOL transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7f91edf4f7c0> params=<ConnectionParameters host=127.0.0.1 port=5672 virtual_host=/ ssl=False>>).
+2020-11-11 18:08:42	[INFO] pika.adapters.utils.connection_workflow : AMQPConnector - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7f91edf4f7c0> params=<ConnectionParameters host=127.0.0.1 port=5672 virtual_host=/ ssl=False>>
+2020-11-11 18:08:42	[INFO] pika.adapters.utils.connection_workflow : AMQPConnectionWorkflow - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7f91edf4f7c0> params=<ConnectionParameters host=127.0.0.1 port=5672 virtual_host=/ ssl=False>>
+2020-11-11 18:08:42	[INFO] pika.adapters.blocking_connection : Connection workflow succeeded: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7f91edf4f7c0> params=<ConnectionParameters host=127.0.0.1 port=5672 virtual_host=/ ssl=False>>
+2020-11-11 18:08:42	[INFO] pika.adapters.blocking_connection : Created channel=1
+2020-11-11 18:08:42	[INFO] root : Re-encryption process started!
+2020-11-11 18:08:42	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 18:08:42] "[37mPOST /send_re_enc_info HTTP/1.1[0m" 200 -
+2020-11-11 18:10:32	[INFO] root : Parsing starting input arguments...
+2020-11-11 18:10:32	[INFO] root : Starting input arguments parsed!
+2020-11-11 18:10:32	[INFO] root : Verifying IP address format...
+2020-11-11 18:10:32	[INFO] root : IP address is valid!
+2020-11-11 18:10:32	[INFO] root : Starting Flask web server...
+2020-11-11 18:10:32	[INFO] werkzeug :  * Running on http://localhost:9000/ (Press CTRL+C to quit)
+2020-11-11 18:10:36	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:10:36	[INFO] root : Getting request body...
+2020-11-11 18:10:36	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:10:36	[INFO] root : Obtaining request body...
+2020-11-11 18:10:36	[INFO] root : Request body successfully obtained!
+2020-11-11 18:10:36	[INFO] root : Saving sent public key files...
+2020-11-11 18:10:36	[INFO] root : Public key files saved!
+2020-11-11 18:10:36	[INFO] root : Starting re-encryption process...
+2020-11-11 18:10:36	[INFO] pika.adapters.utils.connection_workflow : Pika version 1.1.0 connecting to ('127.0.0.1', 5672)
+2020-11-11 18:10:36	[INFO] pika.adapters.utils.io_services_utils : Socket connected: <socket.socket fd=9, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('127.0.0.1', 56632), raddr=('127.0.0.1', 5672)>
+2020-11-11 18:10:36	[INFO] pika.adapters.utils.connection_workflow : Streaming transport linked up: (<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7fe78a38b730>, _StreamingProtocolShim: <SelectConnection PROTOCOL transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7fe78a38b730> params=<ConnectionParameters host=127.0.0.1 port=5672 virtual_host=/ ssl=False>>).
+2020-11-11 18:10:36	[INFO] pika.adapters.utils.connection_workflow : AMQPConnector - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7fe78a38b730> params=<ConnectionParameters host=127.0.0.1 port=5672 virtual_host=/ ssl=False>>
+2020-11-11 18:10:36	[INFO] pika.adapters.utils.connection_workflow : AMQPConnectionWorkflow - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7fe78a38b730> params=<ConnectionParameters host=127.0.0.1 port=5672 virtual_host=/ ssl=False>>
+2020-11-11 18:10:36	[INFO] pika.adapters.blocking_connection : Connection workflow succeeded: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7fe78a38b730> params=<ConnectionParameters host=127.0.0.1 port=5672 virtual_host=/ ssl=False>>
+2020-11-11 18:10:36	[INFO] pika.adapters.blocking_connection : Created channel=1
+2020-11-11 18:10:36	[INFO] root : Re-encryption process started!
+2020-11-11 18:10:36	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 18:10:36] "[37mPOST /send_re_enc_info HTTP/1.1[0m" 200 -
+2020-11-11 18:11:04	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:11:04	[INFO] root : Getting request body...
+2020-11-11 18:11:04	[INFO] root : POST request received on /send_re_enc_info
+2020-11-11 18:11:04	[INFO] root : Obtaining request body...
+2020-11-11 18:11:04	[INFO] root : Request body successfully obtained!
+2020-11-11 18:11:04	[INFO] root : Saving sent public key files...
+2020-11-11 18:11:04	[INFO] root : Public key files saved!
+2020-11-11 18:11:04	[INFO] root : Starting re-encryption process...
+2020-11-11 18:11:04	[INFO] pika.adapters.utils.connection_workflow : Pika version 1.1.0 connecting to ('127.0.0.1', 5672)
+2020-11-11 18:11:04	[INFO] pika.adapters.utils.io_services_utils : Socket connected: <socket.socket fd=13, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('127.0.0.1', 56640), raddr=('127.0.0.1', 5672)>
+2020-11-11 18:11:04	[INFO] pika.adapters.utils.connection_workflow : Streaming transport linked up: (<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7fe7892fd5b0>, _StreamingProtocolShim: <SelectConnection PROTOCOL transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7fe7892fd5b0> params=<ConnectionParameters host=127.0.0.1 port=5672 virtual_host=/ ssl=False>>).
+2020-11-11 18:11:04	[INFO] pika.adapters.utils.connection_workflow : AMQPConnector - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7fe7892fd5b0> params=<ConnectionParameters host=127.0.0.1 port=5672 virtual_host=/ ssl=False>>
+2020-11-11 18:11:04	[INFO] pika.adapters.utils.connection_workflow : AMQPConnectionWorkflow - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7fe7892fd5b0> params=<ConnectionParameters host=127.0.0.1 port=5672 virtual_host=/ ssl=False>>
+2020-11-11 18:11:04	[INFO] pika.adapters.blocking_connection : Connection workflow succeeded: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7fe7892fd5b0> params=<ConnectionParameters host=127.0.0.1 port=5672 virtual_host=/ ssl=False>>
+2020-11-11 18:11:04	[INFO] pika.adapters.blocking_connection : Created channel=1
+2020-11-11 18:11:04	[INFO] root : Re-encryption process started!
+2020-11-11 18:11:04	[INFO] werkzeug : 127.0.0.1 - - [11/Nov/2020 18:11:04] "[37mPOST /send_re_enc_info HTTP/1.1[0m" 200 -

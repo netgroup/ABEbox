@@ -1,0 +1,71 @@
+#==================== TO DO =====================#
+# UPDATE DEPLOY FILES WITH NEW FOLDERS HIERARCHY #
+#================================================#
+
+FROM python:3.8-slim
+
+# Install necessary system and Python libraries
+WORKDIR /app/lib
+COPY requirements ./
+RUN apt-get update && apt-get upgrade -y
+RUN apt-get install -y python-pip m4 libglib2.0 libglib2.0-dev libssl-dev wget flex bison rabbitmq-server
+RUN pip install -r requirements
+RUN pip install -U 'dramatiq[rabbitmq, watch]'
+
+# Download GMP, PBC and CP-ABE libraries [NOTE: "--no-check-certificate" OPTION IS SET, USED ONLY FOR EXPERIMENTAL USE, NOT FOR REAL ONES]
+RUN wget --no-check-certificate https://gmplib.org/download/gmp/gmp-6.2.0.tar.xz
+RUN wget --no-check-certificate https://crypto.stanford.edu/pbc/files/pbc-0.5.14.tar.gz
+RUN wget --no-check-certificate http://acsc.cs.utexas.edu/cpabe/libbswabe-0.9.tar.gz
+RUN wget --no-check-certificate http://acsc.cs.utexas.edu/cpabe/cpabe-0.11.tar.gz
+
+# Install the libraries in specific directories
+ENV LIBRARY_PATH=$LIBRARY_PATH:/usr/local/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
+# Install GMP library
+WORKDIR /app/lib/GmpPbc
+RUN mv /app/lib/gmp-6.2.0.tar.xz ./
+RUN mv /app/lib/pbc-0.5.14.tar.gz ./
+RUN tar xf gmp-6.2.0.tar.xz
+RUN tar xf pbc-0.5.14.tar.gz
+WORKDIR /app/lib/GmpPbc/gmp-6.2.0
+RUN ./configure
+RUN make
+RUN make install
+RUN make check
+
+# Install PBC library
+WORKDIR /app/lib/GmpPbc/pbc-0.5.14
+RUN ./configure
+RUN make
+RUN make install
+
+# Install CP-ABE libraries
+WORKDIR /app/lib
+RUN tar xf libbswabe-0.9.tar.gz
+RUN tar xf cpabe-0.11.tar.gz
+WORKDIR /app/lib/libbswabe-0.9
+RUN ./configure
+RUN make
+RUN make install
+WORKDIR /app/lib/cpabe-0.11
+COPY policy_lang.y ./
+RUN ./configure -with-pbc-include=/usr/local/include/pbc -with-pbc-lib=/usr/local/lib # The paths where pbc.h and libpbc were installed
+RUN make LDFLAGS="-lgmp -lpbc -lcrypto -L/usr/lib/x86_64-linux-gnu -lglib-2.0 -lbswabe -lgmp"
+RUN make install
+
+# Install application
+WORKDIR /app/re_enc_engine
+COPY abe_primitives.py ./
+COPY const.py ./
+COPY function_utils.py ./
+COPY re_enc_primitives.py ./
+COPY re_encryptor.py ./
+COPY request_handler.py ./
+COPY sym_enc_primitives.py ./
+WORKDIR /app/keys
+WORKDIR /app/storage
+COPY enc_test_file ./
+WORKDIR /app/tmp
+WORKDIR /app
+COPY web_server.py ./

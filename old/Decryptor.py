@@ -396,7 +396,7 @@ def remove_aont_enc(ciphertext_infile=None, plaintext_outfile=None, n=AONT_DEFAU
             if debug:  # ONLY USE FOR DEBUG
                 print('DECRYPTED PLAINTEXT = (%d) %s' % (len(dec_plaintext_chunk), dec_plaintext_chunk))
 
-            from FunctionUtils import write_bytes_on_file
+            from old.FunctionUtils import write_bytes_on_file
 
             # Write decrypted plaintext chunk on output file
             write_bytes_on_file(plaintext_outfile, dec_plaintext_chunk, 'ab', 0, debug)

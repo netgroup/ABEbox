@@ -16,7 +16,7 @@ def sym_key_gen(sym_key_size=None, debug=0):
     """
 
     from crypto.Const import SYM_KEY_MIN_SIZE, SYM_KEY_DEFAULT_SIZE
-    from FunctionUtils import clamp, generate_random_string
+    from old.FunctionUtils import clamp, generate_random_string
 
     # If sym_key_size is not defined, set a default value
     if sym_key_size is None:
@@ -61,7 +61,7 @@ def generate_iv(iv_length=None, debug=0):
     if iv_length is None:
         iv_length = IV_DEFAULT_SIZE
 
-    from FunctionUtils import clamp, generate_random_string
+    from old.FunctionUtils import clamp, generate_random_string
     import sys
 
     # Clamp the size between IV_DEFAULT_SIZE and the system maximum possible value

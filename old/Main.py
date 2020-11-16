@@ -2,9 +2,37 @@ if __name__ == '__main__':
 
     debug = 1
 
+    # import requests, json
+    #
+    # data = {
+    #     "company_id": "test_id",
+    #     "time_interval": 0,
+    #     "full": False,
+    #     "re_enc_data": json.dumps([
+    #         {
+    #             'file_name': 'test_file.txt',
+    #             'pub_keys': ['pk_file'],
+    #             'policies': ['test'],
+    #             're_enc_lengths': [16]
+    #         }
+    #     ])
+    # }
+    #
+    # print(data)
+    # headers = {'Content-type': 'multipart/form-data', 'Connection': 'keep-alive'}
+    #
+    # files = {'pk_file0': open('keys/pk_file', 'rb')}
+    #
+    # r = requests.post('http://localhost:9000/send_re_enc_info', files=files, data=data, headers=headers)
+    #
+    # print(r)
+    #
+    # exit(0)
+
+
 # =================================================== SCHEME TEST =================================================== #
 
-    from FunctionUtils import clear_folder, init_logger
+    from old.FunctionUtils import clear_folder, init_logger
     from crypto.Const import KEY_PATH, OUTPUT_PATH, TEMP_PATH, TEST_PATH
 
     # Remove files created during previous executions
@@ -18,8 +46,6 @@ if __name__ == '__main__':
     init_logger()
 
     logging.warning('MAIN LOG')
-
-    import ABE_key_creator as abe
 
     # Define ABE public and master secret keys output files
     pk_file = KEY_PATH + 'pk_file'
@@ -42,13 +68,13 @@ if __name__ == '__main__':
     #          '(executive_level >= 5#4, audit_group, strategy_team))\''
 
     # TEST PLAINTEXT FILE ENCRYPTION
-    import Encryptor as Enc
 
     Enc.create_encrypted_file(plaintext_infile=plaintext_file, ciphertext_outfile=ciphertext_file, pk_file=pk_file,
                               policy=policy, debug=debug)
 
+    exit(0)
+
     # TEST CIPHERTEXT FILE RE-ENCRYPTION
-    import Re_encryptor as Re_enc
 
     Re_enc.apply_re_encryption(ciphertext_file, 16, pk_file, policy, debug)
 
@@ -56,9 +82,9 @@ if __name__ == '__main__':
     sk_files = [sk_file]
 
     # TEST RE-ENCRYPTED CIPHERTEXT FILE DECRYPTION
-    import Decryptor as Dec
+    from old import Decryptor as Dec
 
-    Dec.decrypt_file(ciphertext_file, pk_files, sk_files, debug)
+    Dec.decrypt_file('re_enc_engine/storage/enc_test_file', pk_files, sk_files, debug)
 
 # ================================================== DATABASE TEST ================================================== #
 

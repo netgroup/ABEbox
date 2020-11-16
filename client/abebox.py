@@ -12,7 +12,7 @@ from charm.core.math.pairing import hashPair as extractor
 from charm.toolbox.policytree import PolicyParser
 from charm.core.engine.util import objectToBytes, bytesToObject
 from ABE.ac17 import AC17CPABE
-from charm.toolbox.symcrypto import SymmetricCryptoAbstraction
+#from charm.toolbox.symcrypto import SymmetricCryptoAbstraction
 
 from fuse import FUSE, FuseOSError, Operations
 

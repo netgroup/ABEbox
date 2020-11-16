@@ -16,7 +16,7 @@ def re_encrypt(ciphertext_infile=None, re_enc_length=None, new_pk_file=None, pol
     :return: the new ciphertext with all the parameters required for decryption
     """
 
-    from crypto.Const import RE_ENC_LENGTH
+    from re_enc_engine.const import RE_ENC_LENGTH, SYM_KEY_DEFAULT_SIZE, SEED_LENGTH
     import logging
     import os.path
 
@@ -54,7 +54,6 @@ def re_encrypt(ciphertext_infile=None, re_enc_length=None, new_pk_file=None, pol
         print('IV = (%d) %s' % (len(iv), iv))
         print('RE-ENCRYPTION LENGTH = %d' % re_enc_length)
 
-    from crypto.Const import SYM_KEY_DEFAULT_SIZE, SEED_LENGTH
     import struct
 
     # Create a struct for seed, key and re-enc length to encrypt
@@ -77,7 +76,7 @@ def re_enc_ciphertext_bytes(ciphertext_infile=None, re_enc_length=None, debug=0)
     the number of re-encrypted bytes
     """
 
-    from crypto.Const import RE_ENC_LENGTH
+    from re_enc_engine.const import RE_ENC_LENGTH
     import logging
     import os.path
 
@@ -120,7 +119,7 @@ def get_ciphertext_info(ciphertext_infile=None, debug=0):
     # Get ciphertext offset and length from file
     with(open(ciphertext_infile, 'rb')) as fin:
 
-        from crypto.Const import B, H, Q, IV_DEFAULT_SIZE
+        from re_enc_engine.const import B, H, Q, IV_DEFAULT_SIZE
         import struct
 
         # Retrieve parameters to compute transformed ciphertext length
@@ -180,8 +179,8 @@ def apply_punctured_enc(ciphertext_infile=None, ciphertext_offset=None, cipherte
             print('EXCEPTION in apply_punctured_enc ciphertext_length')
         raise Exception
 
-    from crypto.Const import RE_ENC_MIN_LENGTH, RE_ENC_LENGTH
-    from FunctionUtils import clamp
+    from re_enc_engine.const import RE_ENC_MIN_LENGTH, RE_ENC_LENGTH
+    from re_enc_engine.function_utils import clamp
 
     # Set default value for re-encryption length if it is not set
     if re_enc_length is None:
@@ -246,8 +245,8 @@ def re_enc_bytes(ciphertext_infile=None, ciphertext_offset=None, ciphertext_leng
             print('EXCEPTION in re_enc_bytes ciphertext_length')
         raise Exception
 
-    from crypto.Const import IV_DEFAULT_SIZE, SEED_LENGTH
-    from crypto.SymEncPrimitives import sym_key_gen, generate_iv
+    from re_enc_engine.const import IV_DEFAULT_SIZE, SEED_LENGTH
+    from re_enc_engine.sym_enc_primitives import sym_key_gen, generate_iv
 
     # Create the re-encryption symmetric key
     k = sym_key_gen(sym_key_size=SEED_LENGTH, debug=debug)
@@ -267,7 +266,7 @@ def re_enc_bytes(ciphertext_infile=None, ciphertext_offset=None, ciphertext_leng
     # Check if number of bytes to re-encrypt is greater than transformed ciphertext length
     if re_enc_length < ciphertext_length:  # Apply punctured encryption
 
-        from FunctionUtils import generate_random_string
+        from re_enc_engine.function_utils import generate_random_string
 
         # Generate a pseudorandom seed
         seed = generate_random_string(length=SEED_LENGTH, debug=debug)
@@ -281,7 +280,7 @@ def re_enc_bytes(ciphertext_infile=None, ciphertext_offset=None, ciphertext_leng
             print('BYTES TO RE-ENCRYPT = (%d) %s' % (len(bytes_to_re_enc), bytes_to_re_enc))
             print('INDEX TO RE-ENCRYPT = (%d) %s' % (len(re_enc_indexes), re_enc_indexes))
 
-        from crypto.SymEncPrimitives import sym_encrypt
+        from re_enc_engine.sym_enc_primitives import sym_encrypt
 
         # Re-encrypt random ciphertext bytes
         re_enc_ciphertext = sym_encrypt(key=k, iv=iv, plaintext=bytes_to_re_enc, debug=debug)
@@ -304,7 +303,7 @@ def re_enc_bytes(ciphertext_infile=None, ciphertext_offset=None, ciphertext_leng
             if debug:  # ONLY USE FOR DEBUG
                 print('CIPHERTEXT = (%d) %s -> %s' % (len(ciphertext), ciphertext, hexlify(ciphertext).decode()))
 
-            from crypto.SymEncPrimitives import sym_encrypt
+            from re_enc_engine.sym_enc_primitives import sym_encrypt
 
             # Re-encrypt transformed ciphertext
             re_enc_ciphertext = sym_encrypt(key=k, iv=iv, plaintext=ciphertext, debug=debug)
@@ -542,14 +541,14 @@ def add_re_enc_params(file=None, enc_seed_key_len=None, iv=None, debug=0):
             print('EXCEPTION in add_re_enc_params iv')
         raise Exception
 
-    from crypto.Const import IV_DEFAULT_SIZE
+    from re_enc_engine.const import IV_DEFAULT_SIZE
     import struct
 
     # Create the struct of data to append to the ciphertext file
     struct_format = '%ds%dsH' % (len(enc_seed_key_len), IV_DEFAULT_SIZE)
     data_to_append = struct.pack(struct_format, enc_seed_key_len, iv, len(enc_seed_key_len))
 
-    from FunctionUtils import write_bytes_on_file
+    from re_enc_engine.function_utils import write_bytes_on_file
 
     # Append data bytes to the file
     write_bytes_on_file(file, data_to_append, 'ab', 0, debug)
@@ -592,18 +591,18 @@ def encrypt_seed_key_len(data=None, pk_file=None, policy=None, debug=0):
             print('EXCEPTION in encrypt_seed_key_len policy')
         raise Exception
 
-    from crypto.Const import TEMP_PATH
+    from re_enc_engine.const import TEMP_PATH
 
     # Create temporary files for ABE encryption
     temp_file = TEMP_PATH + 'temp'
     enc_temp_file = TEMP_PATH + 'enc_' + temp_file.rsplit('/', 1)[1]
 
-    from FunctionUtils import write_bytes_on_file, read_bytes_from_file
+    from re_enc_engine.function_utils import write_bytes_on_file, read_bytes_from_file
 
     # Write data on temporary file
     write_bytes_on_file(temp_file, data, 'wb', 0, debug)
 
-    from crypto.ABEPrimitives import encrypt
+    from re_enc_engine.abe_primitives import encrypt
 
     # Encrypt temporary file with ABE
     encrypt(enc_outfile=enc_temp_file, pk_file=pk_file, plaintext_file=temp_file, policy=policy, debug=debug)
@@ -642,7 +641,7 @@ def update_re_enc_num(file=None, increase=0, debug=0):
     # Update re-encryptions number in the file
     with(open(file, 'rb+')) as fin:
 
-        from crypto.Const import B, H, Q, IV_DEFAULT_SIZE
+        from re_enc_engine.const import B, H, Q, IV_DEFAULT_SIZE
         import struct
 
         # Retrieve re-encryptions number from the file
@@ -764,7 +763,7 @@ def get_re_enc_params(file=None, debug=0):
             print('EXCEPTION in get_re_enc_params file')
         raise Exception
 
-    from crypto.Const import H, IV_DEFAULT_SIZE
+    from re_enc_engine.const import H, IV_DEFAULT_SIZE
     import struct
 
     # Retrieve re-encryption params from the file
@@ -835,12 +834,12 @@ def decrypt_seed_key(enc_seed_key=None, pk_file=None, sk_file=None, debug=0):
     with(open(enc_temp_file, 'wb')) as fout:
         fout.write(enc_seed_key)
 
-    from crypto.ABEPrimitives import decrypt
+    from re_enc_engine.abe_primitives import decrypt
 
     # Decrypt with ABE using given public key and secret key
     decrypt(dec_outfile=dec_temp_file, pk_file=pk_file, sk_file=sk_file, ciphertext_file=enc_temp_file, debug=debug)
 
-    from crypto.Const import H, SYM_KEY_DEFAULT_SIZE, SEED_LENGTH
+    from re_enc_engine.const import H, SYM_KEY_DEFAULT_SIZE, SEED_LENGTH
     import struct
 
     # Retrieve data from decryption output file
@@ -909,7 +908,7 @@ def remove_re_enc(ciphertext_infile=None, seed=None, k=None, re_enc_length=None,
                 from binascii import hexlify
                 print('CIPHERTEXT = (%d) %s -> %s' % (len(ciphertext), ciphertext, hexlify(ciphertext).decode()))
 
-            from crypto.SymEncPrimitives import sym_decrypt
+            from re_enc_engine.sym_enc_primitives import sym_decrypt
 
             # Decrypt re-encrypted transformed ciphertext
             re_dec_ciphertext = sym_decrypt(key=k, iv=iv, ciphertext=ciphertext, debug=debug)
@@ -946,7 +945,7 @@ def remove_re_enc(ciphertext_infile=None, seed=None, k=None, re_enc_length=None,
             print('RE-ENCRYPTED BYTES TO DECRYPT = (%d) %s' % (len(bytes_to_re_enc), bytes_to_re_enc))
             print('RE-ENCRYPTED INDEXES TO DECRYPT = (%d) %s' % (len(re_enc_indexes), re_enc_indexes))
 
-        from crypto.SymEncPrimitives import sym_decrypt
+        from re_enc_engine.sym_enc_primitives import sym_decrypt
 
         # Decrypt re-encrypted transformed ciphertext bytes
         dec_ciphertext = sym_decrypt(key=k, iv=iv, ciphertext=bytes_to_re_enc, debug=debug)

@@ -358,7 +358,7 @@ def write_header_on_file(ciphertext_outfile=None, data=None, debug=0):
     if debug:  # ONLY USE FOR DEBUG
         print('DATA TO WRITE ON FILE = (%d) %s' % (len(data_to_write), data_to_write))
 
-    from FunctionUtils import write_bytes_on_file
+    from old.FunctionUtils import write_bytes_on_file
 
     # Write data bytes on given outfile
     write_bytes_on_file(outfile=ciphertext_outfile, data=data_to_write, debug=debug)
@@ -389,7 +389,7 @@ def write_data_on_file(ciphertext_outfile=None, data=None, debug=0):
             print('EXCEPTION in write_data_on_file data')
         raise Exception
 
-    from FunctionUtils import write_bytes_on_file
+    from old.FunctionUtils import write_bytes_on_file
 
     # Append data to the end of the given outfile
     write_bytes_on_file(ciphertext_outfile, data, 'ab', 0, debug)

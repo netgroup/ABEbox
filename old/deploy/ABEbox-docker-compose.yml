@@ -1,0 +1,65 @@
+version: '3'
+
+services:
+
+        #abebox_db:
+        #        image: mysql:latest
+        #        container_name: abebox_db
+        #        restart: always
+        #        ports:
+        #                - "3307:3306"
+        #        environment:
+        #                MYSQL_DATABASE: abebox
+        #                MYSQL_ROOT_USER: root
+        #                MYSQL_ROOT_PASSWORD: abebox
+        #        volumes:
+                        #- ./sql/abebox_db.sql:/docker-entrypoint-initdb.d/init.sql
+        #                - ./dbs/abebox_db:/var/lib/mysql
+        #        networks:
+        #                abebox_network:
+        #                        ipv4_address: 172.25.0.3
+
+        #attribute_authority:
+        #        build:
+        #                context: .
+        #                dockerfile: attr_auth_dockerfile
+        #        image: attribute_authority
+        #        hostname: attribute_authority
+        #        volumes:
+        #                - /var/lib/docker/volumes/abebox/re_enc_engine/logs/:/re_enc_engine/logs/  # TODO MODIFY
+        #                - /var/lib/docker/volumes/abebox/re_enc_engine/keys/:/re_enc_engine/keys/  # TODO MODIFY
+        #        networks:
+        #                abebox_network:
+        #                        ipv4_address: 172.25.0.2
+        #        ports:
+        #                - "5002:5002"
+        #        entrypoint: /bin/bash
+        #        command: -c "python DiffPrivServer.py -a 172.25.0.3 -p 5003"  # TODO MODIFY
+
+        re_enc_engine:
+                build:
+                        context: ../re_enc_engine
+                        dockerfile: re_enc_engine_dockerfile
+                image: re_enc_engine
+                hostname: re_enc_engine
+                volumes:
+                        - /var/lib/docker/volumes/abebox/re_enc_engine/keys/:/app/keys/
+                        - /var/lib/docker/volumes/abebox/re_enc_engine/logs/:/app/logs/
+                        - /var/lib/docker/volumes/abebox/re_enc_engine/storage/:/app/storage/
+                networks:
+                        abebox_network:
+                                ipv4_address: 172.25.0.3
+                ports:
+                        - "5003:5003"
+                entrypoint: /bin/bash
+                command: -c "rabbitmq-server -detached; python web_server.py -a 172.25.0.3 -p 5003"
+
+networks:
+        abebox_network:
+                driver: bridge
+                ipam:
+                        config:
+                                - subnet: 172.25.0.0/16
+
+volumes:
+        persistent:

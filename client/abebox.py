@@ -18,13 +18,16 @@ from fuse import FUSE, FuseOSError, Operations
 
 from passthrough import Passthrough
 
+import aont
 
 import logging
 logging.basicConfig()
 logger = logging.getLogger('fuse')
 logger.info("started")
 
+
 class Abebox(Passthrough):
+
     def __init__(self, root):
         self.CHUNK_SIZE = 1024
 
@@ -59,7 +62,7 @@ class Abebox(Passthrough):
     def _create_meta(self):
         """Create meta information about the file with keys
         """
-        # https://jhuisi.github.io/charm/toolbox/symcrypto.html#symcrypto.SymmetricCryptoAbstraction
+        #https://jhuisi.github.io/charm/toolbox/symcrypto.html#symcrypto.SymmetricCryptoAbstraction
         el = self.pairing_group.random(GT)
 
         self.meta = {
@@ -103,6 +106,7 @@ class Abebox(Passthrough):
                 'sym_key': extractor(el),
                 'nonce': bytearray.fromhex(enc_meta['nonce']),
                 'policy': enc_meta['policy'], #'(DEPT1 and TEAM1)', # hardcoded - TBD
+                'original_data_length': enc_meta['original_data_length']
         }
 
         # create a symmetric cypher
@@ -122,7 +126,8 @@ class Abebox(Passthrough):
         enc_meta = {
             'policy': str(policy), 
             'nonce': self.meta['nonce'].hex(),
-            'enc_el': objectToBytes(enc_el, self.pairing_group).hex(),        
+            'enc_el': objectToBytes(enc_el, self.pairing_group).hex(),
+            'original_data_length': self.meta['original_data_length']
         }
         with open(metafile, 'w') as f:
             json.dump(enc_meta, f)
@@ -148,7 +153,7 @@ class Abebox(Passthrough):
         self._load_meta(self.dirname + '/.abebox/' + self.filename)
 
         # open a temporary file
-        self.temp_fp = tempfile.NamedTemporaryFile() # could be more secure with mkstemp()
+        self.temp_fp = tempfile.NamedTemporaryFile() #could be more secure with mkstemp()
         print("Created tempfile: ", self.temp_fp.name)
 
         # open real file
@@ -156,10 +161,12 @@ class Abebox(Passthrough):
         #enc_fp = os.open(full_path, flags)
         enc_fp = open(full_path, 'rb+')
 
-
         # TBD reverse AONT and remove re-encryption
+        print("Remove AONT from encrypted file")
+        aont.anti_transform(infile=self._full_path(path), args={'original_data_length': self.meta['original_data_length']})
+        print("AONT successfully removed")
 
-        # decrypt the file with the sym key and write it on the temporary file
+        #decrypt the file with the sym key and write it on the temporary file
         sym_cipher = AES.new(self.meta['sym_key'][:16], AES.MODE_CTR, nonce=self.meta['nonce'])
         #with open(self._full_path(path), 'rb') as enc_fp:
         for chunk in self._read_in_chunks(enc_fp, self.CHUNK_SIZE):
@@ -180,7 +187,7 @@ class Abebox(Passthrough):
         print("Creating file ", path)
         print("full path", self._full_path(path))
         # open a temporary file
-        self.temp_fp = tempfile.NamedTemporaryFile() # could be more secure with mkstemp() 
+        self.temp_fp = tempfile.NamedTemporaryFile() #could be more secure with mkstemp()
         print("Created tempfile: ", self.temp_fp.name)
 
         self.dirname, self.filename = os.path.split(self._full_path(path))
@@ -233,6 +240,13 @@ class Abebox(Passthrough):
         print("Closing fs")
         fh.close()
         print("Closed")
+
+        # NEW EMANUELE
+        self.meta['original_data_length'] = os.path.getsize(self._full_path(path))
+
+        print("Applying AONT to newly encrypted file")
+        aont.transform(self._full_path(path))
+        print("AONT successfully applied")
 
 
         meta_directory = self.dirname + '/.abebox/' 

@@ -109,6 +109,8 @@ class Abebox(Passthrough):
                 'original_data_length': enc_meta['original_data_length']
         }
 
+        print('IN _LOAD_META:', self.meta['original_data_length'])
+
         # create a symmetric cypher
         #self.sym_cipher = SymmetricCryptoAbstraction(self.meta['sym_key'])
 
@@ -121,7 +123,9 @@ class Abebox(Passthrough):
         # we need to handle separately enc_el (charm.toolbox.node.BinNode) as there is no serializer
         enc_el = self.cpabe.encrypt(self.abe_pk, self.meta['el'], self.meta['policy'])
         policy = enc_el.pop('policy')
-        
+
+        print('IN _DUMP_META:', self.meta['original_data_length'])
+
         # write encrypted data
         enc_meta = {
             'policy': str(policy), 
@@ -243,6 +247,7 @@ class Abebox(Passthrough):
 
         # NEW EMANUELE
         self.meta['original_data_length'] = os.path.getsize(self._full_path(path))
+        print('IN RELEASE:', self.meta['original_data_length'])
 
         print("Applying AONT to newly encrypted file")
         aont.transform(self._full_path(path))

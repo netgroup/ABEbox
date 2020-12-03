@@ -7,8 +7,6 @@ https://github.com/Brandon-Everhart/OAEP/blob/master/OAEP.py.
 """
 
 from binascii import hexlify, unhexlify
-from Crypto.Protocol.KDF import HKDF
-from Crypto.Hash import SHA512
 from secrets import SystemRandom  # Generate secure random numbers
 
 import hashlib  # SHA-256
@@ -337,17 +335,15 @@ def pad(msg, debug=0):
     """
 
     # Create two oracles using sha-256 hash function
-    #oracle1 = hashlib.sha256()  # used to hash a random integer
-    #oracle2 = hashlib.sha256()  # used to hash the result of XOR(paddedMsg, hash(randBitStr))
+    oracle1 = hashlib.sha256()  # used to hash a random integer
+    oracle2 = hashlib.sha256()  # used to hash the result of XOR(paddedMsg, hash(randBitStr))
 
     # Generate a random integer that has a size of k0bits. Format the random int as a binary string making sure to
     # maintain leading zeros with the K0BitsFill argument
-    # rand_bit_str = format(SystemRandom().getrandbits(k0BitsInt), k0BitsFill)
-    rand_bytes = int(format(SystemRandom().getrandbits(k0BitsInt), k0BitsFill), 2).to_bytes(k0BitsInt // 8, byteorder=endian)
-    # rand_bytes = SystemRandom().randbytes(n=k0BitsInt // 8)
+    rand_bit_str = format(SystemRandom().getrandbits(k0BitsInt), k0BitsFill)
 
     if debug:  # ONLY USE FOR DEBUG
-        print('RAND BIT STRING = (%d) %s' % (len(rand_bytes), rand_bytes))
+        print('RAND BIT STRING = (%d) %s' % (len(rand_bit_str), rand_bit_str))
 
     # Change msg string to a binary string
     bin_msg = hex_to_binary(msg)
@@ -371,29 +367,14 @@ def pad(msg, debug=0):
     # hexdigest method to hash the value placed in the oracle by the update method, and return the hex representation of
     # this hash. Change our hash output, zeroPaddedMsg, and randBitStr to integers to use XOR operation. Format the
     # resulting ints as binary strings. Hashing and XOR ordering follows OAEP algorithm
-    # oracle1.update(rand_bit_str.encode(encoding))
-    # salt1 = SystemRandom.randbytes(16)
-
-    h_r = HKDF(master=rand_bytes, key_len=(nBits - k0BitsInt) // 8, salt=b'', hashmod=SHA512, num_keys=1)
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('H(r) = (%d) %s' % (len(h_r), h_r))
-
-    x = format(int(zero_padded_msg, 2) ^ int.from_bytes(h_r, byteorder=endian), n_k0BitsFill)
+    oracle1.update(rand_bit_str.encode(encoding))
+    x = format(int(zero_padded_msg, 2) ^ int(oracle1.hexdigest(), 16), n_k0BitsFill)
 
     if debug:  # ONLY USE FOR DEBUG
         print('X = ', x)
 
-    # oracle2.update(x.encode(encoding))
-    # salt2 = SystemRandom.randbytes(16)
-
-    g_x = HKDF(master=int(x, 2).to_bytes(len(x) // 8, byteorder=endian), key_len=k0BitsInt // 8, salt=b'', hashmod=SHA512,
-               num_keys=1)
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('G(X) = (%d) %s' % (len(g_x), g_x))
-
-    y = format(int.from_bytes(g_x, byteorder=endian) ^ int.from_bytes(rand_bytes, byteorder=endian), k0BitsFill)
+    oracle2.update(x.encode(encoding))
+    y = format(int(oracle2.hexdigest(), 16) ^ int(rand_bit_str, 2), k0BitsFill)
 
     if debug:  # ONLY USE FOR DEBUG
         print('Y = ', y)
@@ -410,8 +391,8 @@ def unpad(msg, debug=0):
     """
 
     # Create two oracles using sha-256 hash function
-    # oracle1 = hashlib.sha256()  # used to hash the random r to recover the message with trailing zeros
-    # oracle2 = hashlib.sha256()  # used to hash X to recover the random r
+    oracle1 = hashlib.sha256()  # used to hash the random r to recover the message with trailing zeros
+    oracle2 = hashlib.sha256()  # used to hash X to recover the random r
 
     # Extract X and Y from given message
     x = msg[0: nBits - k0BitsInt]
@@ -422,33 +403,15 @@ def unpad(msg, debug=0):
         print('Y = (%d) %s' % (len(y), y))
 
     # Reconstruct the random r as the result of XOR(Y, hash2(X))
-    # oracle2.update(x.encode(encoding))
-
-    g_x = HKDF(master=int(x, 2).to_bytes(len(x) // 8, byteorder=endian), key_len=k0BitsInt // 8, salt=b'', hashmod=SHA512,
-               num_keys=1)
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('G(X) = (%d) %s' % (len(g_x), g_x))
-
-    r = format(int.from_bytes(g_x, byteorder=endian) ^ int(y, 2), k0BitsFill)
-    # r = format(int(y, 2) ^ int(oracle2.hexdigest(), 16), k0BitsFill)
+    oracle2.update(x.encode(encoding))
+    r = format(int(y, 2) ^ int(oracle2.hexdigest(), 16), k0BitsFill)
 
     if debug:  # ONLY USE FOR DEBUG
         print('EXTRACTED RANDOM = ', r)
 
-    # oracle2.update(x.encode(encoding))
-    # salt2 = SystemRandom.randbytes(16)
-
     # Reconstruct the message with k1Bits trailing zeros as the result of XOR(X, hash(r))
-    # oracle1.update(r.encode(encoding))
-    # msg_with_0s = format(int(x, 2) ^ int(oracle1.hexdigest(), 16), n_k0BitsFill)
-
-    h_r = HKDF(master=int(r, 2).to_bytes(len(r) // 8, byteorder=endian), key_len=(nBits - k0BitsInt) // 8, salt=b'', hashmod=SHA512, num_keys=1)
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('H(r) = (%d) %s' % (len(h_r), h_r))
-
-    msg_with_0s = format(int(x, 2) ^ int.from_bytes(h_r, byteorder=endian), n_k0BitsFill)
+    oracle1.update(r.encode(encoding))
+    msg_with_0s = format(int(x, 2) ^ int(oracle1.hexdigest(), 16), n_k0BitsFill)
 
     if debug:  # ONLY USE FOR DEBUG
         print('EXTRACTED MSG = ', msg_with_0s)

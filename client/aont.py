@@ -11,7 +11,6 @@ from Crypto.Protocol.KDF import HKDF
 from Crypto.Hash import SHA512
 from secrets import SystemRandom  # Generate secure random numbers
 
-import hashlib  # SHA-256
 import logging
 import os
 
@@ -328,6 +327,7 @@ def init(args=None):
     errors = args['errors']
 
 
+# TODO Update comments in pad and unpad
 def pad(msg, debug=0):
     """
     Apply OAEP to the given message.
@@ -343,7 +343,8 @@ def pad(msg, debug=0):
     # Generate a random integer that has a size of k0bits. Format the random int as a binary string making sure to
     # maintain leading zeros with the K0BitsFill argument
     # rand_bit_str = format(SystemRandom().getrandbits(k0BitsInt), k0BitsFill)
-    rand_bytes = int(format(SystemRandom().getrandbits(k0BitsInt), k0BitsFill), 2).to_bytes(k0BitsInt // 8, byteorder=endian)
+    rand_bytes = int(format(SystemRandom().getrandbits(k0BitsInt), k0BitsFill), 2).to_bytes(k0BitsInt // 8,
+                                                                                            byteorder=endian)
     # rand_bytes = SystemRandom().randbytes(n=k0BitsInt // 8)
 
     if debug:  # ONLY USE FOR DEBUG
@@ -387,8 +388,8 @@ def pad(msg, debug=0):
     # oracle2.update(x.encode(encoding))
     # salt2 = SystemRandom.randbytes(16)
 
-    g_x = HKDF(master=int(x, 2).to_bytes(len(x) // 8, byteorder=endian), key_len=k0BitsInt // 8, salt=b'', hashmod=SHA512,
-               num_keys=1)
+    g_x = HKDF(master=int(x, 2).to_bytes(len(x) // 8, byteorder=endian), key_len=k0BitsInt // 8, salt=b'',
+               hashmod=SHA512, num_keys=1)
 
     if debug:  # ONLY USE FOR DEBUG
         print('G(X) = (%d) %s' % (len(g_x), g_x))
@@ -424,8 +425,8 @@ def unpad(msg, debug=0):
     # Reconstruct the random r as the result of XOR(Y, hash2(X))
     # oracle2.update(x.encode(encoding))
 
-    g_x = HKDF(master=int(x, 2).to_bytes(len(x) // 8, byteorder=endian), key_len=k0BitsInt // 8, salt=b'', hashmod=SHA512,
-               num_keys=1)
+    g_x = HKDF(master=int(x, 2).to_bytes(len(x) // 8, byteorder=endian), key_len=k0BitsInt // 8, salt=b'',
+               hashmod=SHA512, num_keys=1)
 
     if debug:  # ONLY USE FOR DEBUG
         print('G(X) = (%d) %s' % (len(g_x), g_x))
@@ -443,7 +444,8 @@ def unpad(msg, debug=0):
     # oracle1.update(r.encode(encoding))
     # msg_with_0s = format(int(x, 2) ^ int(oracle1.hexdigest(), 16), n_k0BitsFill)
 
-    h_r = HKDF(master=int(r, 2).to_bytes(len(r) // 8, byteorder=endian), key_len=(nBits - k0BitsInt) // 8, salt=b'', hashmod=SHA512, num_keys=1)
+    h_r = HKDF(master=int(r, 2).to_bytes(len(r) // 8, byteorder=endian), key_len=(nBits - k0BitsInt) // 8, salt=b'',
+               hashmod=SHA512, num_keys=1)
 
     if debug:  # ONLY USE FOR DEBUG
         print('H(r) = (%d) %s' % (len(h_r), h_r))

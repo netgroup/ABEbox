@@ -16,7 +16,7 @@ import logging
 import os
 
 # Global OAEP configuration parameters
-nBits = 1024        # MAX 127 KB
+nBits = 1024        # MAX 127*1024 BITS (127 Kb)
 k0BitsInt = 256
 n_k0BitsFill = '0' + str(nBits - k0BitsInt) + 'b'
 k0BitsFill = '0' + str(k0BitsInt) + 'b'

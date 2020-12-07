@@ -22,139 +22,157 @@ k0BitsFill = '0' + str(k0BitsInt) + 'b'
 encoding = 'utf-8'
 endian = 'big'
 errors = 'surrogatepass'
-file_chunk_size = (nBits - k0BitsInt) // 8              # FILE BYTES TO PROCESS (USE A MULTIPLE OF THIS VALUE)
+chunk_size = (nBits - k0BitsInt) // 8              # FILE BYTES TO PROCESS (USE A MULTIPLE OF THIS VALUE)
 
 
-def transform(infile=None, outfile=None, args=None, debug=1):
+def transform(data=None, args=None, debug=1):
     """
-    Apply All-Or-Nothing Transformation to the input file and save the result on the output file.
-    :param infile: file to transform
-    :param outfile: file where transformation output will be saved
+    Apply All-Or-Nothing Transformation to the given data and return the result.
+    :param data: data to transform
     :param args: AONT configuration parameters to pass to the init function
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+    :return a string containing transformation result
     """
 
-    # Check if infile is set and it exists
-    if infile is None or not os.path.exists(infile):
+    # Check if data is set
+    if data is None:
 
-        logging.error('[AONT] In transform: infile exception')
+        logging.error('[AONT] In transform: data exception')
         if debug:  # ONLY USE FOR DEBUG
-            print('[AONT] In transform: infile exception')
+            print('[AONT] In transform: data exception')
+        raise Exception
+
+    # # Flag for file renaming if outfile is not set
+    # to_rename = False
+    #
+    # # Check if outfile is set, otherwise it will be the infile
+    # if outfile is None:
+    #
+    #     logging.info('[AONT] In transform: outfile not set; output will be saved in infile')
+    #     if debug:  # ONLY USE FOR DEBUG
+    #         print('[AONT] In transform: outfile not set; output will be saved in infile')
+    #
+    #     outfile = infile.rsplit('/', 1)[0] + '/transf_' + infile.rsplit('/', 1)[1]
+    #     to_rename = True
+
+    # Read data chunk from the input file
+    # with(open(infile, 'rb')) as fin:
+
+    # data_chunks = [data[i: i + chunk_size] for i in range(0, len(data), chunk_size)]
+    transf_data = b''
+
+    # Transform chunks until all data is transformed
+    for data_chunk in [data[i: i + chunk_size] for i in range(0, len(data), chunk_size)]:
+
+        # Last read is empty, so processing will be skipped
+        # if not len(infile_chunk):
+        #    return
+
+        if debug:  # ONLY USE FOR DEBUG
+            print('[AONT] DATA CHUNK = (%d) %s -> %s' % (len(data_chunk), data_chunk, hexlify(data_chunk)))
+
+        # Apply All-Or-Nothing Transformation to data chunk
+        transf_data_chunk = apply_aont(data=data_chunk, args=args, debug=debug)
+
+        if debug:  # ONLY USE FOR DEBUG
+            print('[AONT] TRANSFORMED DATA CHUNK = (%d) %s -> %s'
+                  % (len(transf_data_chunk), transf_data_chunk, hexlify(transf_data_chunk)))
+
+        # Write transformed input file chunk on output file
+        # with(open(outfile, 'ab')) as fout:
+        #    fout.write(transf_infile_chunk)
+
+        # Append transformed data chunk to transformation result to return
+        transf_data += transf_data_chunk
+
+    # Replace input file content with temporary output file one
+    # if to_rename:
+    #     print('Renaming file...')
+    #     os.remove(infile)
+    #     print('Removed', infile)
+    #     os.rename(outfile, infile)
+    #     print('Renamed %s -> %s' % (outfile, infile))
+
+    return transf_data
+
+
+def anti_transform(data=None, args=None, debug=1):
+    """
+    Remove All-Or-Nothing Transformation to the given data and return the result.
+    :param data: data to anti-transform
+    :param args: AONT configuration parameters to pass to the init function
+    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+    :return a string containing anti-transformation result
+    """
+
+    # Check if data is set
+    if data is None:
+        logging.error('[AONT] In anti-transform: data exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('[AONT] In anti-transform: data exception')
         raise Exception
 
     # Flag for file renaming if outfile is not set
-    to_rename = False
+    # to_rename = False
+    #
+    # # Check if outfile is set, otherwise it will be the infile
+    # if outfile is None:
+    #
+    #     logging.info('[AONT] In anti-transform: outfile not set; output will be saved in infile')
+    #     if debug:  # ONLY USE FOR DEBUG
+    #         print('[AONT] In anti-transform: outfile not set; output will be saved in infile')
+    #
+    #     outfile = infile.rsplit('/', 1)[0] + '/anti_transf_' + infile.rsplit('/', 1)[1]
+    #     to_rename = True
+    #
+    # # Read data chunk from the input file
+    # with(open(infile, 'rb')) as fin:
 
-    # Check if outfile is set, otherwise it will be the infile
-    if outfile is None:
+    anti_transf_data = b''
+    transf_chunk_size = nBits // 8
+    original_data_length = args.pop('original_data_length', None)
+    print('TRANSF CHUNK SIZE =', transf_chunk_size, '\nORIGINAL DATA LEN =', original_data_length, '\n\n')
 
-        logging.info('[AONT] In transform: outfile not set; output will be saved in infile')
+    # Anti-transform chunks until all data is anti-transformed
+    for data_chunk in [data[i: i + transf_chunk_size] for i in range(0, len(data), transf_chunk_size)]:
+    # for infile_chunk in iter(lambda: fin.read(chunk_size), ''):
+
+        # Last read is empty, so processing will be skipped
+        # if not len(infile_chunk):
+        #     break
+
         if debug:  # ONLY USE FOR DEBUG
-            print('[AONT] In transform: outfile not set; output will be saved in infile')
+            print('[AONT] DATA CHUNK = (%d) %s -> %s' % (len(data_chunk), data_chunk, hexlify(data_chunk)))
 
-        outfile = infile.rsplit('/', 1)[0] + '/transf_' + infile.rsplit('/', 1)[1]
-        to_rename = True
+        # Remove All-Or-Nothing Transformation from data chunk
+        anti_transf_data_chunk = remove_aont(data=data_chunk, args=args,
+                                             data_length=min(transf_chunk_size, original_data_length), debug=debug)
 
-    # Read data chunk from the input file
-    with(open(infile, 'rb')) as fin:
+        if debug:  # ONLY USE FOR DEBUG
+            print('[AONT] ANTI-TRANSFORMED DATA CHUNK = (%d) %s -> %s'
+                  % (len(anti_transf_data_chunk), anti_transf_data_chunk, hexlify(anti_transf_data_chunk)))
 
-        # Transform chunks until all the input file is transformed
-        for infile_chunk in iter(lambda: fin.read(file_chunk_size), b''):
+        # Write transformed input file chunk on output file
+        # with(open(outfile, 'ab')) as fout:
+        #     fout.write(anti_transf_infile_chunk)
 
-            # Last read is empty, so processing will be skipped
-            if not len(infile_chunk):
-                return
+        # Append transformed data chunk to transformation result to return
+        anti_transf_data += anti_transf_data_chunk
 
-            if debug:  # ONLY USE FOR DEBUG
-                print('[AONT] INFILE CHUNK = (%d) %s -> %s' % (len(infile_chunk), infile_chunk, hexlify(infile_chunk)))
+        # Decrease remaining original data length
+        original_data_length -= (nBits - k0BitsInt) // 8
 
-            # Apply All-Or-Nothing Transformation to input file chunk
-            transf_infile_chunk = apply_aont(data=infile_chunk, args=args, debug=debug)
-
-            if debug:  # ONLY USE FOR DEBUG
-                print('[AONT] TRANSFORMED INFILE CHUNK = (%d) %s -> %s'
-                      % (len(transf_infile_chunk), transf_infile_chunk, hexlify(transf_infile_chunk)))
-
-            # Write transformed input file chunk on output file
-            with(open(outfile, 'ab')) as fout:
-                fout.write(transf_infile_chunk)
+        print('ANTI-TRANSF DATA =', anti_transf_data, '\nORIGINAL DATA LEN =', original_data_length, '\n')
 
     # Replace input file content with temporary output file one
-    if to_rename:
-        print('Renaming file...')
-        os.remove(infile)
-        print('Removed', infile)
-        os.rename(outfile, infile)
-        print('Renamed %s -> %s' % (outfile, infile))
+    # if to_rename:
+    #     print('Renaming file...')
+    #     os.remove(infile)
+    #     print('Removed', infile)
+    #     os.rename(outfile, infile)
+    #     print('Renamed %s -> %s' % (outfile, infile))
 
-
-def anti_transform(infile=None, outfile=None, args=None, debug=1):
-    """
-    Remove All-Or-Nothing Transformation to the input file and save the result on the output file.
-    :param infile: file to anti-transform
-    :param outfile: file where anti-transformation output will be saved
-    :param args: AONT configuration parameters to pass to the init function
-    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
-    """
-
-    # Check if infile is set and it exists
-    if infile is None or not os.path.exists(infile):
-        logging.error('[AONT] In anti-transform: infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('[AONT] In anti-transform: infile exception')
-        raise Exception
-
-    # Flag for file renaming if outfile is not set
-    to_rename = False
-
-    # Check if outfile is set, otherwise it will be the infile
-    if outfile is None:
-
-        logging.info('[AONT] In anti-transform: outfile not set; output will be saved in infile')
-        if debug:  # ONLY USE FOR DEBUG
-            print('[AONT] In anti-transform: outfile not set; output will be saved in infile')
-
-        outfile = infile.rsplit('/', 1)[0] + '/anti_transf_' + infile.rsplit('/', 1)[1]
-        to_rename = True
-
-    # Read data chunk from the input file
-    with(open(infile, 'rb')) as fin:
-
-        chunk_size = nBits // 8
-        original_data_length = args.pop('original_data_length', None)
-
-        # Anti-transform chunks until all the input file is anti-transformed
-        for infile_chunk in iter(lambda: fin.read(chunk_size), ''):
-
-            # Last read is empty, so processing will be skipped
-            if not len(infile_chunk):
-                break
-
-            if debug:  # ONLY USE FOR DEBUG
-                print('[AONT] INFILE CHUNK = (%d) %s -> %s' % (len(infile_chunk), infile_chunk, hexlify(infile_chunk)))
-
-            # Remove All-Or-Nothing Transformation to input file chunk
-            anti_transf_infile_chunk = remove_aont(data=infile_chunk, args=args,
-                                                   data_length=min(chunk_size, original_data_length), debug=debug)
-
-            if debug:  # ONLY USE FOR DEBUG
-                print('[AONT] ANTI-TRANSFORMED INFILE CHUNK = (%d) %s -> %s'
-                      % (len(anti_transf_infile_chunk), anti_transf_infile_chunk, hexlify(anti_transf_infile_chunk)))
-
-            # Write transformed input file chunk on output file
-            with(open(outfile, 'ab')) as fout:
-                fout.write(anti_transf_infile_chunk)
-
-            # Decrease remaining original data length
-            original_data_length -= (nBits - k0BitsInt) // 8
-
-    # Replace input file content with temporary output file one
-    if to_rename:
-        print('Renaming file...')
-        os.remove(infile)
-        print('Removed', infile)
-        os.rename(outfile, infile)
-        print('Renamed %s -> %s' % (outfile, infile))
+    return anti_transf_data, original_data_length
 
 
 def apply_aont(data=None, args=None, debug=0):
@@ -163,6 +181,7 @@ def apply_aont(data=None, args=None, debug=0):
     :param data: data to transform
     :param args: AONT configuration parameters
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+    :return a string containing transformed data bytes
     """
 
     # Check if data is set
@@ -191,7 +210,7 @@ def apply_aont(data=None, args=None, debug=0):
     transformed_data_bytes = unhexlify(hex(int(transformed_data, 2))[2:].zfill(len(transformed_data) // 4))
 
     if debug:  # ONLY USE FOR DEBUG
-        print('TRANSFORMED DATA BYTES = (%d) %s\n' % (len(transformed_data_bytes), transformed_data_bytes))
+        print('TRANSFORMED DATA BYTES = (%d) %s' % (len(transformed_data_bytes), transformed_data_bytes))
 
     return transformed_data_bytes
 
@@ -203,6 +222,7 @@ def remove_aont(data=None, args=None, data_length=None, debug=0):
     :param args: AONT configuration parameters
     :param data_length: data length
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+    :return a string containing anti-transformed data
     """
 
     # Check if data is set
@@ -238,13 +258,13 @@ def remove_aont(data=None, args=None, data_length=None, debug=0):
                                             .zfill(len(anti_transformed_data) // 4))
 
     if debug:  # ONLY USE FOR DEBUG
-        print('ANTI-TRANSFORMED DATA BYTES = (%d) %s\n' % (len(anti_transformed_data_bytes), anti_transformed_data_bytes))
+        print('ANTI-TRANSFORMED DATA BYTES = (%d) %s' % (len(anti_transformed_data_bytes), anti_transformed_data_bytes))
 
     # Truncate any existing padding trailing zeros
     anti_transformed_data_bytes = anti_transformed_data_bytes[: data_length]
 
     if debug:  # ONLY USE FOR DEBUG
-        print('ANTI-TRANSFORMED DATA BYTES = (%d) %s\n' % (len(anti_transformed_data_bytes), anti_transformed_data_bytes))
+        print('CUT ANTI-TRANSFORMED DATA BYTES = (%d) %s' % (len(anti_transformed_data_bytes), anti_transformed_data_bytes))
 
     return anti_transformed_data_bytes
 

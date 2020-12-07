@@ -162,18 +162,20 @@ class Abebox(Passthrough):
 
         # open real file
         full_path = self._full_path(path)
+
         #enc_fp = os.open(full_path, flags)
         enc_fp = open(full_path, 'rb+')
 
         # TBD reverse AONT and remove re-encryption
-        print("Remove AONT from encrypted file")
-        aont.anti_transform(infile=self._full_path(path), args={'original_data_length': self.meta['original_data_length']})
-        print("AONT successfully removed")
+        original_data_len = self.meta['original_data_length']
 
         #decrypt the file with the sym key and write it on the temporary file
         sym_cipher = AES.new(self.meta['sym_key'][:16], AES.MODE_CTR, nonce=self.meta['nonce'])
         #with open(self._full_path(path), 'rb') as enc_fp:
         for chunk in self._read_in_chunks(enc_fp, self.CHUNK_SIZE):
+            print("Remove AONT from encrypted data chunk")
+            chunk, original_data_len = aont.anti_transform(data=chunk, args={'original_data_length': original_data_len})
+            print("AONT successfully removed")
             x = sym_cipher.decrypt(chunk)
             print("got chunk in open: ", x)
             self.temp_fp.write(x)
@@ -230,10 +232,18 @@ class Abebox(Passthrough):
         print("Temporary file has size : ", self.temp_fp.seek(0, os.SEEK_END))
         self.temp_fp.seek(0)
 
+        original_data_length = 0
+
         for chunk in self._read_in_chunks(self.temp_fp, self.CHUNK_SIZE):
-            print("release - read chunk" , chunk)
-            #os.write(fh, sym_cipher.encrypt(chunk))
-            fh.write(sym_cipher.encrypt(chunk))
+            print("release - read chunk", chunk)
+            # os.write(fh, sym_cipher.encrypt(chunk))
+            # fh.write(sym_cipher.encrypt(chunk))
+            enc_chunk = sym_cipher.encrypt(chunk)
+            original_data_length += len(enc_chunk)
+            print("Applying AONT to newly encrypted chunk")
+            transf_enc_chunk = aont.transform(data=enc_chunk)
+            print("AONT successfully applied")
+            fh.write(transf_enc_chunk)
             print("chunk has been written on file ", fh)
         #with open(self._full_path(path), 'wb+') as enc_fp:
         #    print("Release: file opened with fp ", enc_fp)
@@ -245,14 +255,8 @@ class Abebox(Passthrough):
         fh.close()
         print("Closed")
 
-        # NEW EMANUELE
-        self.meta['original_data_length'] = os.path.getsize(self._full_path(path))
+        self.meta['original_data_length'] = original_data_length
         print('IN RELEASE:', self.meta['original_data_length'])
-
-        print("Applying AONT to newly encrypted file")
-        aont.transform(self._full_path(path))
-        print("AONT successfully applied")
-
 
         meta_directory = self.dirname + '/.abebox/' 
         if not os.path.exists(meta_directory):

@@ -174,7 +174,12 @@ class Abebox(Passthrough):
         #with open(self._full_path(path), 'rb') as enc_fp:
         for chunk in self._read_in_chunks(enc_fp, self.CHUNK_SIZE):
             print("Remove AONT from encrypted data chunk")
-            chunk, original_data_len = aont.anti_transform(data=chunk, args={'original_data_length': original_data_len})
+            aont_args = {
+                'nBits': self.CHUNK_SIZE,
+                'k0BitsInt': 256,
+                'original_data_length': original_data_len
+            }
+            chunk, original_data_len = aont.anti_transform(data=chunk, args=aont_args)
             print("AONT successfully removed")
             x = sym_cipher.decrypt(chunk)
             print("got chunk in open: ", x)
@@ -241,7 +246,11 @@ class Abebox(Passthrough):
             enc_chunk = sym_cipher.encrypt(chunk)
             original_data_length += len(enc_chunk)
             print("Applying AONT to newly encrypted chunk")
-            transf_enc_chunk = aont.transform(data=enc_chunk)
+            aont_args = {
+                'nBits': self.CHUNK_SIZE,
+                'k0BitsInt': 256
+            }
+            transf_enc_chunk = aont.transform(data=enc_chunk, args=aont_args)
             print("AONT successfully applied")
             fh.write(transf_enc_chunk)
             print("chunk has been written on file ", fh)

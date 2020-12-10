@@ -1,8 +1,6 @@
 import os
 import aont as aont
 
-#import old.Encryptor as enc
-
 if __name__ == '__main__':
 
     input = 'test_file.txt'

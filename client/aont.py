@@ -1,28 +1,27 @@
 """
-This file contains All-Or-Nothing Transformation implemented with OAEP scheme primitives. The very first two methods,
-'transform' and 'anti_transform', are the API interfaces those are called. OAEP primitives have been slightly modified
-starting from the ones provided from B. Everhart.
+This file contains All-Or-Nothing Transformation implemented as an OAEP variation but with very same scheme primitives.
+We only changed OAEP oracle G(), usually realised with hash function, with a PRF for arbitrary string expansion.
+The very first two methods in this file, 'transform' and 'anti_transform', are the API interfaces those are called.
+OAEP primitives have been slightly modified starting from the ones provided from B. Everhart.
 Full details about his library can be found at the following link:
 https://github.com/Brandon-Everhart/OAEP/blob/master/OAEP.py.
 """
 
 from binascii import hexlify, unhexlify
-from Crypto.Protocol.KDF import HKDF
-from Crypto.Hash import SHA512
 from secrets import SystemRandom  # Generate secure random numbers
 
+import hashlib
 import logging
-import os
+import random   # WARNING: NOT CRYPTOGRAPHICALLY SECURE
 
 # Global OAEP configuration parameters
-nBits = 1024        # MAX 127*1024 BITS (127 Kb)
-k0BitsInt = 256
+nBits = 1024                                        # WARNING: MAXIMUM DEPENDS ON CHOSEN EXPANSION FUNCTION
+k0BitsInt = 256                                     # MINIMUM RANDOM BITS LENGTH FOR SECURITY REASON
 n_k0BitsFill = '0' + str(nBits - k0BitsInt) + 'b'
 k0BitsFill = '0' + str(k0BitsInt) + 'b'
 encoding = 'utf-8'
 endian = 'big'
 errors = 'surrogatepass'
-chunk_size = (nBits - k0BitsInt) // 8              # FILE BYTES TO PROCESS (USE A MULTIPLE OF THIS VALUE)
 
 
 def transform(data=None, args=None, debug=1):
@@ -36,62 +35,19 @@ def transform(data=None, args=None, debug=1):
 
     # Check if data is set
     if data is None:
-
         logging.error('[AONT] In transform: data exception')
         if debug:  # ONLY USE FOR DEBUG
             print('[AONT] In transform: data exception')
         raise Exception
 
-    # # Flag for file renaming if outfile is not set
-    # to_rename = False
-    #
-    # # Check if outfile is set, otherwise it will be the infile
-    # if outfile is None:
-    #
-    #     logging.info('[AONT] In transform: outfile not set; output will be saved in infile')
-    #     if debug:  # ONLY USE FOR DEBUG
-    #         print('[AONT] In transform: outfile not set; output will be saved in infile')
-    #
-    #     outfile = infile.rsplit('/', 1)[0] + '/transf_' + infile.rsplit('/', 1)[1]
-    #     to_rename = True
+    if debug:  # ONLY USE FOR DEBUG
+        print('[AONT] DATA = (%d) %s -> %s' % (len(data), data, hexlify(data)))
 
-    # Read data chunk from the input file
-    # with(open(infile, 'rb')) as fin:
+    # Apply All-Or-Nothing Transformation to data
+    transf_data = apply_aont(data=data, args=args, debug=debug)
 
-    # data_chunks = [data[i: i + chunk_size] for i in range(0, len(data), chunk_size)]
-    transf_data = b''
-
-    # Transform chunks until all data is transformed
-    for data_chunk in [data[i: i + chunk_size] for i in range(0, len(data), chunk_size)]:
-
-        # Last read is empty, so processing will be skipped
-        # if not len(infile_chunk):
-        #    return
-
-        if debug:  # ONLY USE FOR DEBUG
-            print('[AONT] DATA CHUNK = (%d) %s -> %s' % (len(data_chunk), data_chunk, hexlify(data_chunk)))
-
-        # Apply All-Or-Nothing Transformation to data chunk
-        transf_data_chunk = apply_aont(data=data_chunk, args=args, debug=debug)
-
-        if debug:  # ONLY USE FOR DEBUG
-            print('[AONT] TRANSFORMED DATA CHUNK = (%d) %s -> %s'
-                  % (len(transf_data_chunk), transf_data_chunk, hexlify(transf_data_chunk)))
-
-        # Write transformed input file chunk on output file
-        # with(open(outfile, 'ab')) as fout:
-        #    fout.write(transf_infile_chunk)
-
-        # Append transformed data chunk to transformation result to return
-        transf_data += transf_data_chunk
-
-    # Replace input file content with temporary output file one
-    # if to_rename:
-    #     print('Renaming file...')
-    #     os.remove(infile)
-    #     print('Removed', infile)
-    #     os.rename(outfile, infile)
-    #     print('Renamed %s -> %s' % (outfile, infile))
+    if debug:  # ONLY USE FOR DEBUG
+        print('[AONT] TRANSFORMED DATA = (%d) %s -> %s' % (len(transf_data), transf_data, hexlify(transf_data)))
 
     return transf_data
 
@@ -112,65 +68,23 @@ def anti_transform(data=None, args=None, debug=1):
             print('[AONT] In anti-transform: data exception')
         raise Exception
 
-    # Flag for file renaming if outfile is not set
-    # to_rename = False
-    #
-    # # Check if outfile is set, otherwise it will be the infile
-    # if outfile is None:
-    #
-    #     logging.info('[AONT] In anti-transform: outfile not set; output will be saved in infile')
-    #     if debug:  # ONLY USE FOR DEBUG
-    #         print('[AONT] In anti-transform: outfile not set; output will be saved in infile')
-    #
-    #     outfile = infile.rsplit('/', 1)[0] + '/anti_transf_' + infile.rsplit('/', 1)[1]
-    #     to_rename = True
-    #
-    # # Read data chunk from the input file
-    # with(open(infile, 'rb')) as fin:
+    if debug:  # ONLY USE FOR DEBUG
+        print('[AONT] DATA = (%d) %s -> %s' % (len(data), data, hexlify(data)))
 
-    anti_transf_data = b''
-    transf_chunk_size = nBits // 8
+    # Get anti-transformation params
+    transf_data_size = nBits // 8
     original_data_length = args.pop('original_data_length', None)
-    print('TRANSF CHUNK SIZE =', transf_chunk_size, '\nORIGINAL DATA LEN =', original_data_length, '\n\n')
 
-    # Anti-transform chunks until all data is anti-transformed
-    for data_chunk in [data[i: i + transf_chunk_size] for i in range(0, len(data), transf_chunk_size)]:
-    # for infile_chunk in iter(lambda: fin.read(chunk_size), ''):
+    # Remove All-Or-Nothing Transformation from data chunk
+    anti_transf_data = remove_aont(data=data, args=args, data_length=min(transf_data_size, original_data_length),
+                                   debug=debug)
 
-        # Last read is empty, so processing will be skipped
-        # if not len(infile_chunk):
-        #     break
+    if debug:  # ONLY USE FOR DEBUG
+        print('[AONT] ANTI-TRANSFORMED DATA = (%d) %s -> %s' % (len(anti_transf_data), anti_transf_data,
+                                                                hexlify(anti_transf_data)))
 
-        if debug:  # ONLY USE FOR DEBUG
-            print('[AONT] DATA CHUNK = (%d) %s -> %s' % (len(data_chunk), data_chunk, hexlify(data_chunk)))
-
-        # Remove All-Or-Nothing Transformation from data chunk
-        anti_transf_data_chunk = remove_aont(data=data_chunk, args=args,
-                                             data_length=min(transf_chunk_size, original_data_length), debug=debug)
-
-        if debug:  # ONLY USE FOR DEBUG
-            print('[AONT] ANTI-TRANSFORMED DATA CHUNK = (%d) %s -> %s'
-                  % (len(anti_transf_data_chunk), anti_transf_data_chunk, hexlify(anti_transf_data_chunk)))
-
-        # Write transformed input file chunk on output file
-        # with(open(outfile, 'ab')) as fout:
-        #     fout.write(anti_transf_infile_chunk)
-
-        # Append transformed data chunk to transformation result to return
-        anti_transf_data += anti_transf_data_chunk
-
-        # Decrease remaining original data length
-        original_data_length -= (nBits - k0BitsInt) // 8
-
-        print('ANTI-TRANSF DATA =', anti_transf_data, '\nORIGINAL DATA LEN =', original_data_length, '\n')
-
-    # Replace input file content with temporary output file one
-    # if to_rename:
-    #     print('Renaming file...')
-    #     os.remove(infile)
-    #     print('Removed', infile)
-    #     os.rename(outfile, infile)
-    #     print('Renamed %s -> %s' % (outfile, infile))
+    # Decrease remaining original data length
+    original_data_length -= len(anti_transf_data)
 
     return anti_transf_data, original_data_length
 
@@ -190,8 +104,6 @@ def apply_aont(data=None, args=None, debug=0):
         if debug:  # ONLY USE FOR DEBUG
             print('[AONT] in apply_aont: data exception')
         raise Exception
-
-    #data = b'\x00\x15'
 
     if debug:  # ONLY USE FOR DEBUG
         print('DATA BYTES = (%d) %s' % (len(data), data))
@@ -253,7 +165,6 @@ def remove_aont(data=None, args=None, data_length=None, debug=0):
                                                              anti_transformed_data))
 
     # Convert anti-transformation result from character string to bytes
-    #anti_transformed_data_bytes = bytes(anti_transformed_data.encode(encoding))
     anti_transformed_data_bytes = unhexlify(hex(int(anti_transformed_data, 2))[2:]
                                             .zfill(len(anti_transformed_data) // 4))
 
@@ -264,67 +175,39 @@ def remove_aont(data=None, args=None, data_length=None, debug=0):
     anti_transformed_data_bytes = anti_transformed_data_bytes[: data_length]
 
     if debug:  # ONLY USE FOR DEBUG
-        print('CUT ANTI-TRANSFORMED DATA BYTES = (%d) %s' % (len(anti_transformed_data_bytes), anti_transformed_data_bytes))
+        print('CUT ANTI-TRANSFORMED DATA BYTES = (%d) %s' % (len(anti_transformed_data_bytes),
+                                                             anti_transformed_data_bytes))
 
     return anti_transformed_data_bytes
 
 
 # ============================================== OAEP scheme primitives ============================================== #
 
-
-def chars_to_binary(msg, end=endian, err=errors):
-    """
-    Helper function to change a character string into a binary string, making sure to have full byte output
-    (don't drop leading 0's).
-    :param msg: a charater string
-    :param end: endian encoding
-    :param err: used when encoding the msg
-    :return: a binary string
-    """
-
-    bits = bin(int.from_bytes(msg.encode(encoding, err), end))[2:]
-    return bits.zfill(8 * ((len(bits) + 7) // 8))
-
-
-def binary_to_chars(bits, end=endian, err=errors):
-    """
-    Helper function to change a binary string into a character string.
-    :param bits: a binary string
-    :param end: endian encoding
-    :param err: used when decoding the bits
-    :return: a character string
-    """
-
-    n = int(bits, 2)
-    return n.to_bytes((n.bit_length() + 7) // 8, end).decode(encoding, err) or '\0'
-
-
-def hex_to_binary(msg):
+def hex_to_binary(msg=None, debug=0):
     """
     Convert a hexadecimal string into a binary one and fill with leading zeros.
     :param msg: hexadecimal string to convert
     :return: binary string with leading zeros
     """
 
-    print('IN HEX TO BIN: msg = (%s) (%d) %s' % (type(msg), len(msg), msg))
+    # Check if msg is set
+    if msg is None:
+        logging.error('[AONT] in hex_to_binary: msg exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('[AONT] in hex_to_binary: msg exception')
+        raise Exception
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('IN HEX TO BIN: msg = (%s) (%d) %s' % (type(msg), len(msg), msg))
 
     # Convert hex to bin
     bits = bin(int(msg, 16))[2:]
 
-    print('IN HEX TO BIN: bits = (%s) (%d) %s' % (type(bits), len(bits), bits))
+    if debug:  # ONLY USE FOR DEBUG
+        print('IN HEX TO BIN: bits = (%s) (%d) %s' % (type(bits), len(bits), bits))
 
-    # Return bin with leading 0s
+    # Return bits with leading 0s
     return bits.zfill(len(msg) * 4)
-
-
-# def binary_to_hex(bits):
-#     """
-#     Convert a binary string into a hexadecimal one.
-#     :param bits: binary string to convert
-#     :return: hexadecimal string
-#     """
-#
-#     return hex(int(bits, 2))
 
 
 def init(args=None):
@@ -338,44 +221,39 @@ def init(args=None):
 
     global nBits, k0BitsInt, n_k0BitsFill, k0BitsFill, encoding, endian, errors
 
-    nBits = args['nBits']
-    k0BitsInt = args['k0BitsInt']
-    n_k0BitsFill = '0' + str(nBits - k0BitsInt) + 'b'
-    k0BitsFill = '0' + str(k0BitsInt) + 'b'
-    encoding = args['encoding']
-    endian = args['endian']
-    errors = args['errors']
+    if 'nBits' in args.keys():
+        nBits = args['nBits']
+        n_k0BitsFill = '0' + str(nBits - k0BitsInt) + 'b'
+    if 'k0BitsInt' in args.keys():
+        k0BitsInt = args['k0BitsInt']
+        n_k0BitsFill = '0' + str(nBits - k0BitsInt) + 'b'
+        k0BitsFill = '0' + str(k0BitsInt) + 'b'
+    if 'encoding' in args.keys():
+        encoding = args['encoding']
+    if 'endian' in args.keys():
+        endian = args['endian']
+    if 'errors' in args.keys():
+        errors = args['errors']
 
 
-# TODO Update comments in pad and unpad
 def pad(msg, debug=0):
     """
-    Apply OAEP to the given message.
+    Apply OAEP variation to the given message.
     :param msg: string to pad
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: string of 0s and 1s representing the concatenation of OAEP result, X and Y
     """
 
-    # Create two oracles using sha-256 hash function
-    #oracle1 = hashlib.sha256()  # used to hash a random integer
-    #oracle2 = hashlib.sha256()  # used to hash the result of XOR(paddedMsg, hash(randBitStr))
-
     # Generate a random integer that has a size of k0bits. Format the random int as a binary string making sure to
-    # maintain leading zeros with the K0BitsFill argument
-    # rand_bit_str = format(SystemRandom().getrandbits(k0BitsInt), k0BitsFill)
+    # maintain leading zeros with the K0BitsFill argument.
     rand_bytes = int(format(SystemRandom().getrandbits(k0BitsInt), k0BitsFill), 2).to_bytes(k0BitsInt // 8,
                                                                                             byteorder=endian)
-    # rand_bytes = SystemRandom().randbytes(n=k0BitsInt // 8)
 
     if debug:  # ONLY USE FOR DEBUG
         print('RAND BIT STRING = (%d) %s' % (len(rand_bytes), rand_bytes))
 
     # Change msg string to a binary string
-    bin_msg = hex_to_binary(msg)
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('MSG = (%d) %s' % (len(msg), msg))
-        print('BIN MSG = (%d) %s' % (len(bin_msg), bin_msg))
+    bin_msg = hex_to_binary(msg, debug)
 
     zero_padded_msg = bin_msg
 
@@ -388,92 +266,123 @@ def pad(msg, debug=0):
     if debug:  # ONLY USE FOR DEBUG
         print('ZERO PADDED MSG = (%d) %s' % (len(zero_padded_msg), zero_padded_msg))
 
-    # Use the hashlib update method to pass the values we wish to be hashed to the oracle. Then use the hashlib
-    # hexdigest method to hash the value placed in the oracle by the update method, and return the hex representation of
-    # this hash. Change our hash output, zeroPaddedMsg, and randBitStr to integers to use XOR operation. Format the
-    # resulting ints as binary strings. Hashing and XOR ordering follows OAEP algorithm
-    # oracle1.update(rand_bit_str.encode(encoding))
-    # salt1 = SystemRandom.randbytes(16)
+    # Using generated random bytes as seed for prng, generate random strings until their concatenation has a length
+    # equal to zero_padded_msg's one (expansion of r, G(r))
+    random.seed(a=rand_bytes)
+    g_r = b''
+    remaining_bits_len = len(zero_padded_msg)
 
-    h_r = HKDF(master=rand_bytes, key_len=(nBits - k0BitsInt) // 8, salt=b'', hashmod=SHA512, num_keys=1)
+    while len(g_r) * 8 < len(zero_padded_msg):
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('H(r) = (%d) %s' % (len(h_r), h_r))
+        if debug:  # ONLY USE FOR DEBUG
+            print('REMAINING BITS LEN =', remaining_bits_len)
 
-    x = format(int(zero_padded_msg, 2) ^ int.from_bytes(h_r, byteorder=endian), n_k0BitsFill)
+        random_bits_len = min(nBits, remaining_bits_len)
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('X = ', x)
+        if debug:  # ONLY USE FOR DEBUG
+            print('RANDOM BITS LEN =', random_bits_len)
 
-    # oracle2.update(x.encode(encoding))
-    # salt2 = SystemRandom.randbytes(16)
+        random_bits = random.getrandbits(random_bits_len).to_bytes(random_bits_len // 8, endian)
 
-    g_x = HKDF(master=int(x, 2).to_bytes(len(x) // 8, byteorder=endian), key_len=k0BitsInt // 8, salt=b'',
-               hashmod=SHA512, num_keys=1)
+        if debug:  # ONLY USE FOR DEBUG
+            print('RANDOM BITS = (%d) %s' % (len(random_bits), random_bits))
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('G(X) = (%d) %s' % (len(g_x), g_x))
-
-    y = format(int.from_bytes(g_x, byteorder=endian) ^ int.from_bytes(rand_bytes, byteorder=endian), k0BitsFill)
+        g_r += random_bits
+        remaining_bits_len -= len(random_bits) * 8
 
     if debug:  # ONLY USE FOR DEBUG
-        print('Y = ', y)
+        print('G(r) = (%d) %s' % (len(g_r), g_r))
+
+    # Compute X as zero_padded_msg XOR G(r)
+    x = format(int(zero_padded_msg, 2) ^ int.from_bytes(g_r, byteorder=endian), n_k0BitsFill)
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('X = (%d) %s' % (len(x), x))
+
+    # Create an oracle using sha-256 hash function for H()
+    oracle2 = hashlib.sha256()
+
+    # Hash the result of XOR(paddedMsg, hash(randBitStr)), computing H(X)
+    oracle2.update(x.encode(encoding))
+    h_x = oracle2.digest()
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('H(X) = (%d) %s' % (len(h_x), h_x))
+
+    # Compute Y as H(X) XOR r
+    y = format(int.from_bytes(h_x, byteorder=endian) ^ int.from_bytes(rand_bytes, byteorder=endian), k0BitsFill)
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('Y = (%d) %s' % (len(y), y))
 
     return x + y
 
 
 def unpad(msg, debug=0):
     """
-    Remove OAEP from the given message.
+    Remove OAEP variation from the given message.
     :param msg: string to unpad
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: string of 0s and 1s containing message previously padded with OAEP (NOTE: it contains k1Bits trailing 0s)
     """
 
-    # Create two oracles using sha-256 hash function
-    # oracle1 = hashlib.sha256()  # used to hash the random r to recover the message with trailing zeros
-    # oracle2 = hashlib.sha256()  # used to hash X to recover the random r
-
     # Extract X and Y from given message
-    x = msg[0: nBits - k0BitsInt]
-    y = msg[nBits - k0BitsInt:]
+    x = msg[0: len(msg) - k0BitsInt]
+    y = msg[len(msg) - k0BitsInt:]
 
     if debug:  # ONLY USE FOR DEBUG
         print('X = (%d) %s' % (len(x), x))
         print('Y = (%d) %s' % (len(y), y))
 
-    # Reconstruct the random r as the result of XOR(Y, hash2(X))
-    # oracle2.update(x.encode(encoding))
+    # Create an oracle using sha-256 hash function for H()
+    oracle2 = hashlib.sha256()
 
-    g_x = HKDF(master=int(x, 2).to_bytes(len(x) // 8, byteorder=endian), key_len=k0BitsInt // 8, salt=b'',
-               hashmod=SHA512, num_keys=1)
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('G(X) = (%d) %s' % (len(g_x), g_x))
-
-    r = format(int.from_bytes(g_x, byteorder=endian) ^ int(y, 2), k0BitsFill)
-    # r = format(int(y, 2) ^ int(oracle2.hexdigest(), 16), k0BitsFill)
+    # Compute H(X)
+    oracle2.update(x.encode(encoding))
+    h_x = oracle2.digest()
 
     if debug:  # ONLY USE FOR DEBUG
-        print('EXTRACTED RANDOM = ', r)
+        print('H(X) = (%d) %s' % (len(h_x), h_x))
 
-    # oracle2.update(x.encode(encoding))
-    # salt2 = SystemRandom.randbytes(16)
-
-    # Reconstruct the message with k1Bits trailing zeros as the result of XOR(X, hash(r))
-    # oracle1.update(r.encode(encoding))
-    # msg_with_0s = format(int(x, 2) ^ int(oracle1.hexdigest(), 16), n_k0BitsFill)
-
-    h_r = HKDF(master=int(r, 2).to_bytes(len(r) // 8, byteorder=endian), key_len=(nBits - k0BitsInt) // 8, salt=b'',
-               hashmod=SHA512, num_keys=1)
+    # Recover the random r as the result of H(X) XOR Y
+    r_bits_string = format(int.from_bytes(h_x, byteorder=endian) ^ int(y, 2), k0BitsFill)
+    r = bytes.fromhex(hex(int(r_bits_string, 2))[2:].zfill(len(r_bits_string) // 4))
 
     if debug:  # ONLY USE FOR DEBUG
-        print('H(r) = (%d) %s' % (len(h_r), h_r))
+        print('EXTRACTED RANDOM BITS STRING = (%d) %s' % (len(r_bits_string), r_bits_string))
+        print('EXTRACTED RANDOM = (%d) %s' % (len(r), r))
 
-    msg_with_0s = format(int(x, 2) ^ int.from_bytes(h_r, byteorder=endian), n_k0BitsFill)
+    # Using recovered random as seed for prng, generate random strings until their concatenation has a length
+    # equal to zero_padded_msg's one (expansion of r, G(r))
+    random.seed(a=r)
+    g_r = b''
+    remaining_bits_len = len(x)
+
+    while len(g_r) * 8 < len(x):
+
+        if debug:  # ONLY USE FOR DEBUG
+            print('REMAINING BITS LEN =', remaining_bits_len)
+
+        random_bits_len = min(nBits, remaining_bits_len)
+
+        if debug:  # ONLY USE FOR DEBUG
+            print('RANDOM BITS LEN =', random_bits_len)
+
+        random_bits = random.getrandbits(random_bits_len).to_bytes(random_bits_len // 8, endian)
+
+        if debug:  # ONLY USE FOR DEBUG
+            print('RANDOM BITS = (%d) %s' % (len(random_bits), random_bits))
+
+        g_r += random_bits
+        remaining_bits_len -= len(random_bits) * 8
 
     if debug:  # ONLY USE FOR DEBUG
-        print('EXTRACTED MSG = ', msg_with_0s)
+        print('G(r) = (%d) %s' % (len(g_r), g_r))
 
-    #return binary_to_chars(msg_with_0s)
+    # Recover original message padded with 0s as X XOR G(r)
+    msg_with_0s = format(int(x, 2) ^ int.from_bytes(g_r, byteorder=endian), n_k0BitsFill)
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('EXTRACTED MSG WITH 0s = (%d) %s' % (len(msg_with_0s), msg_with_0s))
+
     return msg_with_0s

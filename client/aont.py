@@ -15,13 +15,14 @@ import logging
 import random   # WARNING: NOT CRYPTOGRAPHICALLY SECURE
 
 # Global OAEP configuration parameters
-nBits = 1024                                        # WARNING: MAXIMUM DEPENDS ON CHOSEN EXPANSION FUNCTION
+nBits = 1024
 k0BitsInt = 256                                     # MINIMUM RANDOM BITS LENGTH FOR SECURITY REASON
 n_k0BitsFill = '0' + str(nBits - k0BitsInt) + 'b'
 k0BitsFill = '0' + str(k0BitsInt) + 'b'
 encoding = 'utf-8'
 endian = 'big'
 errors = 'surrogatepass'
+max_expansion_bits_len = 127*1024                   # WARNING: MAXIMUM DEPENDS ON CHOSEN EXPANSION FUNCTION
 
 
 def transform(data=None, args=None, debug=1):
@@ -72,21 +73,22 @@ def anti_transform(data=None, args=None, debug=1):
         print('[AONT] DATA = (%d) %s -> %s' % (len(data), data, hexlify(data)))
 
     # Get anti-transformation params
-    transf_data_size = nBits // 8
-    original_data_length = args.pop('original_data_length', None)
+    # transf_data_size = len(data) // 8
+    # original_data_length = args.pop('original_data_length', None)
 
     # Remove All-Or-Nothing Transformation from data chunk
-    anti_transf_data = remove_aont(data=data, args=args, data_length=min(transf_data_size, original_data_length),
-                                   debug=debug)
+    # anti_transf_data = remove_aont(data=data, args=args, data_length=min(transf_data_size, original_data_length),
+    anti_transf_data = remove_aont(data=data, args=args, debug=debug)
 
     if debug:  # ONLY USE FOR DEBUG
         print('[AONT] ANTI-TRANSFORMED DATA = (%d) %s -> %s' % (len(anti_transf_data), anti_transf_data,
                                                                 hexlify(anti_transf_data)))
 
     # Decrease remaining original data length
-    original_data_length -= len(anti_transf_data)
+    # original_data_length -= len(anti_transf_data)
 
-    return anti_transf_data, original_data_length
+    # return anti_transf_data, original_data_length
+    return anti_transf_data
 
 
 def apply_aont(data=None, args=None, debug=0):
@@ -127,7 +129,8 @@ def apply_aont(data=None, args=None, debug=0):
     return transformed_data_bytes
 
 
-def remove_aont(data=None, args=None, data_length=None, debug=0):
+# def remove_aont(data=None, args=None, data_length=None, debug=0):
+def remove_aont(data=None, args=None, debug=0):
     """
     Remove All-Or-Nothing Transformation from the given data
     :param data: data to transform
@@ -145,11 +148,11 @@ def remove_aont(data=None, args=None, data_length=None, debug=0):
         raise Exception
 
     # Check if data length is set
-    if data_length is None:
-        logging.error('[AONT] in remove_aont: data exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('[AONT] in remove_aont: data exception')
-        raise Exception
+    # if data_length is None:
+    #     logging.error('[AONT] in remove_aont: data exception')
+    #     if debug:  # ONLY USE FOR DEBUG
+    #         print('[AONT] in remove_aont: data exception')
+    #     raise Exception
 
     if debug:  # ONLY USE FOR DEBUG
         print('DATA BYTES = (%d) %s' % (len(data), data))
@@ -172,7 +175,7 @@ def remove_aont(data=None, args=None, data_length=None, debug=0):
         print('ANTI-TRANSFORMED DATA BYTES = (%d) %s' % (len(anti_transformed_data_bytes), anti_transformed_data_bytes))
 
     # Truncate any existing padding trailing zeros
-    anti_transformed_data_bytes = anti_transformed_data_bytes[: data_length]
+    # anti_transformed_data_bytes = anti_transformed_data_bytes[: data_length]
 
     if debug:  # ONLY USE FOR DEBUG
         print('CUT ANTI-TRANSFORMED DATA BYTES = (%d) %s' % (len(anti_transformed_data_bytes),
@@ -221,6 +224,8 @@ def init(args=None):
 
     global nBits, k0BitsInt, n_k0BitsFill, k0BitsFill, encoding, endian, errors
 
+    print('IN AONT INIT: args =', args)
+
     if 'nBits' in args.keys():
         nBits = args['nBits']
         n_k0BitsFill = '0' + str(nBits - k0BitsInt) + 'b'
@@ -255,29 +260,30 @@ def pad(msg, debug=0):
     # Change msg string to a binary string
     bin_msg = hex_to_binary(msg, debug)
 
-    zero_padded_msg = bin_msg
+    # zero_padded_msg = bin_msg
 
     # If the input msg has a binary length shorter than (nBits-k0Bits) then append k1Bits 0s to the end of the msg
     # (where k1Bits is the number of bits to make len(binMsg) = (nBits-k0Bits))
-    if len(bin_msg) <= (nBits - k0BitsInt):
-        k1_bits = nBits - k0BitsInt - len(bin_msg)
-        zero_padded_msg += ('0' * k1_bits)
+    # if len(bin_msg) <= (nBits - k0BitsInt):
+    #     k1_bits = nBits - k0BitsInt - len(bin_msg)
+    #     zero_padded_msg += ('0' * k1_bits)
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('ZERO PADDED MSG = (%d) %s' % (len(zero_padded_msg), zero_padded_msg))
+    # if debug:  # ONLY USE FOR DEBUG
+    #     print('ZERO PADDED MSG = (%d) %s' % (len(zero_padded_msg), zero_padded_msg))
 
     # Using generated random bytes as seed for prng, generate random strings until their concatenation has a length
     # equal to zero_padded_msg's one (expansion of r, G(r))
     random.seed(a=rand_bytes)
     g_r = b''
-    remaining_bits_len = len(zero_padded_msg)
+    remaining_bits_len = len(bin_msg)
+    # remaining_bits_len = len(zero_padded_msg)
 
-    while len(g_r) * 8 < len(zero_padded_msg):
+    while len(g_r) * 8 < len(bin_msg):
 
         if debug:  # ONLY USE FOR DEBUG
             print('REMAINING BITS LEN =', remaining_bits_len)
 
-        random_bits_len = min(nBits, remaining_bits_len)
+        random_bits_len = min(max_expansion_bits_len, remaining_bits_len)
 
         if debug:  # ONLY USE FOR DEBUG
             print('RANDOM BITS LEN =', random_bits_len)
@@ -294,7 +300,8 @@ def pad(msg, debug=0):
         print('G(r) = (%d) %s' % (len(g_r), g_r))
 
     # Compute X as zero_padded_msg XOR G(r)
-    x = format(int(zero_padded_msg, 2) ^ int.from_bytes(g_r, byteorder=endian), n_k0BitsFill)
+    x = format(int(bin_msg, 2) ^ int.from_bytes(g_r, byteorder=endian), n_k0BitsFill)
+    # x = format(int(zero_padded_msg, 2) ^ int.from_bytes(g_r, byteorder=endian), n_k0BitsFill)
 
     if debug:  # ONLY USE FOR DEBUG
         print('X = (%d) %s' % (len(x), x))
@@ -363,7 +370,7 @@ def unpad(msg, debug=0):
         if debug:  # ONLY USE FOR DEBUG
             print('REMAINING BITS LEN =', remaining_bits_len)
 
-        random_bits_len = min(nBits, remaining_bits_len)
+        random_bits_len = min(max_expansion_bits_len, remaining_bits_len)
 
         if debug:  # ONLY USE FOR DEBUG
             print('RANDOM BITS LEN =', random_bits_len)

@@ -112,7 +112,8 @@ class Passthrough(Operations):
         return os.read(fh, length)
 
     def write(self, path, buf, offset, fh):
-        print("write")
+        print("write", offset)
+        print("len", len(buf))
         os.lseek(fh, offset, os.SEEK_SET)
         return os.write(fh, buf)
 

@@ -6,7 +6,7 @@ if __name__ == '__main__':
     input = 'test_file.txt'
     transf_output = 'transf_' + input
     anti_transf_output = 'antitransf_' + transf_output
-    length = os.path.getsize(input)
+    # length = os.path.getsize(input)
 
     with(open(input, 'rb')) as fin:
 
@@ -17,10 +17,19 @@ if __name__ == '__main__':
             if not len(infile_chunk):
                 break
 
-            transf_chunk = aont.transform(data=infile_chunk, debug=1)
+            args = {
+                'nBits': len(infile_chunk) * 8 + 256,
+                'k0BitsInt': 256
+            }
+            transf_chunk = aont.transform(data=infile_chunk, args=args, debug=1)
             print('TRANSF CHUNK =', transf_chunk, '\n')
             open(transf_output, 'ab').write(transf_chunk)
             # enc.apply_aont(open('test_file.txt', 'rb').read(), debug=1)
-            anti_transf_chunk, length = aont.anti_transform(data=transf_chunk, args={'original_data_length': length}, debug=1)
+            # anti_transf_chunk, length = aont.anti_transform(data=transf_chunk, args={'original_data_length': length}, debug=1)
+            args = {
+                'nBits': len(infile_chunk) * 8 + 256,
+                'k0BitsInt': 256
+            }
+            anti_transf_chunk = aont.anti_transform(data=transf_chunk, args=args, debug=1)
             print('ANTI-TRANSF CHUNK =', anti_transf_chunk, '\n')
             open(anti_transf_output, 'ab').write(anti_transf_chunk)

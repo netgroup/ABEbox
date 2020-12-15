@@ -31,7 +31,7 @@ class Abebox(Passthrough):
 
     def __init__(self, root):
         self.CHUNK_SIZE = 1024
-        self.RANDOM_SIZE = 256
+        self.RANDOM_SIZE = 32
 
         #load abe key
         self._load_abe_keys(str(Path.home()) + '/.abe_keys')
@@ -144,9 +144,8 @@ class Abebox(Passthrough):
     def _decode(self, chunk_num, offset):
         """
         Remove AONT and encryption from the given chunk and write the result on the temporary file
-        :param chunk_num:
-        :param offset:
-        :return:
+        :param chunk_num: number of file chunk to anti-transform and decrypt
+        :param offset: position where the result must be written
         """
         # Open the transformed encrypted file (the real one)
         # full_path = self._full_path(path)
@@ -156,7 +155,7 @@ class Abebox(Passthrough):
         self.enc_fp.seek(chunk_num * self.CHUNK_SIZE)
 
         # Read file chunk
-        chunk = self.enc_fp.read(self.CHUNK_SIZE - self.RANDOM_SIZE)
+        chunk = self.enc_fp.read(self.CHUNK_SIZE)
 
         # original_data_len = self.CHUNK_SIZE
 
@@ -167,17 +166,17 @@ class Abebox(Passthrough):
         # Anti-transform file chunk
         print("Remove AONT from encrypted file chunk")
         aont_args = {
-            'nBits': len(chunk) * 8 + self.RANDOM_SIZE,
-            'k0BitsInt': self.RANDOM_SIZE,
+            'nBits': len(chunk) * 8,
+            'k0BitsInt': self.RANDOM_SIZE * 8,
             # 'original_data_length': original_data_len
         }
-        chunk = aont.anti_transform(data=chunk, args=aont_args)
+        chunk = aont.anti_transform(data=chunk, args=aont_args, debug=0)
         print("AONT successfully removed")
 
         # Decrypt the anti-transformed file chunk with the sym key and write it on the temporary file
         sym_cipher = AES.new(self.meta['sym_key'][:16], AES.MODE_CTR, nonce=self.meta['nonce'])
         x = sym_cipher.decrypt(chunk)
-        print("got chunk in open: ", x)
+        print("got chunk in _decode: ", x)
         self.temp_fp.seek(offset)
         self.temp_fp.write(x)
 
@@ -190,26 +189,34 @@ class Abebox(Passthrough):
 
     def read(self, path, length, offset, fh):
 
-        self.enc_fp.close()
-        self.enc_fp = open(self._full_path(path), 'rb')
+        # self.enc_fp.close()
+        # self.enc_fp = open(self._full_path(path), 'rb')
+        real_len = min(length, os.path.getsize(self._full_path(path)))
 
         # Compute offset and last byte to read in transformed encrypted file TODO CORRETTO???
         transf_offset = offset + (math.floor(offset / self.CHUNK_SIZE) * self.RANDOM_SIZE)
-        transf_last_byte = offset + length + (math.floor((offset + length) / self.CHUNK_SIZE) * self.RANDOM_SIZE)
+        transf_last_byte = offset + real_len + (math.floor((offset + real_len) / self.CHUNK_SIZE) * self.RANDOM_SIZE)
 
         # Compute file chunks involved in reading process
         starting_aont_chunk_num = math.floor(transf_offset / self.CHUNK_SIZE)
         ending_aont_chunk_num = math.floor(transf_last_byte / self.CHUNK_SIZE)
 
+        # print('OFFSET =', offset)
+        # print('REAL LENGTH =', real_len)
+        # print('TRANSF OFFSET =', offset)
+        # print('TRANSF LAST BYTE =', transf_last_byte)
+        # print('STARTING AONT CHUNK NUM =', starting_aont_chunk_num)
+        # print('ENDING AONT CHUNK NUM =', ending_aont_chunk_num)
+
         # Check if those chunks have already been processed
         for chunk_num in range(starting_aont_chunk_num, ending_aont_chunk_num + 1):
             # Check if chunk is already in the list, otherwise add it and all previous ones not inside the list
-            if chunk_num not in self.file_read_chunks.keys():
+            if str(chunk_num) not in self.file_read_chunks.keys():  # TODO PROBABILMENTE QUESTO CHECK NON VIENE UTILIZZATO (DA VALUTARE)
                 print('Chunk not in already read list')
                 for prev_chunk_num in range(chunk_num + 1):
-                    print('Adding chunk #%d to the already read list with value 0' % prev_chunk_num)
-                    if prev_chunk_num not in self.file_read_chunks.keys():
+                    if str(prev_chunk_num) not in self.file_read_chunks.keys():
                         self.file_read_chunks[str(prev_chunk_num)] = 0
+                        print('Adding chunk #%d to the already read list with value %d' % (prev_chunk_num, self.file_read_chunks[str(prev_chunk_num)]))
             # Check if chunk has already been processed
             if not self.file_read_chunks[str(chunk_num)]:
                 print('Chunk #%d needs to be processed' % chunk_num)
@@ -224,8 +231,8 @@ class Abebox(Passthrough):
 
     def write(self, path, buf, offset, fh):
 
-        self.enc_fp.close()
-        self.enc_fp = open(self._full_path(path), 'wb')
+        # self.enc_fp.close()
+        # self.enc_fp = open(self._full_path(path), 'wb')
 
         # Compute offset and last byte to read in transformed encrypted file TODO CORRETTO??? SOPRATTUTTO LAST_BYTE
         transf_offset = offset + (math.floor(offset / self.CHUNK_SIZE) * self.RANDOM_SIZE)
@@ -238,14 +245,14 @@ class Abebox(Passthrough):
         # Check if those chunks have already been processed
         for chunk_num in range(starting_aont_chunk_num, ending_aont_chunk_num + 1):
             # Check if chunk is already in the list, otherwise add it and all previous ones not inside the list
-            if chunk_num not in self.file_written_chunks.keys():
+            if str(chunk_num) not in self.file_written_chunks.keys():
                 print('Chunk not in already written list')
                 for prev_chunk_num in range(chunk_num + 1):
-                    print('Adding chunk #%d to the already written list with value 0' % prev_chunk_num)
-                    if prev_chunk_num not in self.file_written_chunks.keys():
-                        self.file_written_chunks[str(prev_chunk_num)] = 0
+                    if str(prev_chunk_num) not in self.file_written_chunks.keys():
+                        self.file_written_chunks[str(prev_chunk_num)] = 1
+                        print('Adding chunk #%d to the already written list with value %d' % (prev_chunk_num, self.file_written_chunks[str(prev_chunk_num)]))
             # Check if chunk has already been processed
-            if not self.file_written_chunks[str(chunk_num)]:
+            elif not self.file_written_chunks[str(chunk_num)]:
                 print('Chunk #%d needs to be processed' % chunk_num)
                 # Anti-transform and decrypt chunk
                 self._decode(chunk_num, offset)
@@ -257,6 +264,7 @@ class Abebox(Passthrough):
 
 
     def open(self, path, flags):
+
         print("Opening file ", path)
         self.is_new = False
 
@@ -266,9 +274,11 @@ class Abebox(Passthrough):
         self._load_meta(self.dirname + '/.abebox/' + self.filename)
 
         # original_data_len = self.meta['original_data_length']
+        print('loaded meta')
 
         # Open a temporary file with given size
         self.temp_fp = tempfile.NamedTemporaryFile()  # could be more secure with mkstemp()
+        print('PATH = %s\nSIZE = %d' % (self._full_path(path), os.path.getsize(self._full_path(path))))
         self.temp_fp.seek(os.path.getsize(self._full_path(path)) - 1)
         self.temp_fp.write(b'\0')
         # self.temp_fp.seek(0)
@@ -287,6 +297,13 @@ class Abebox(Passthrough):
         self.file_written_chunks = {str(i): 0 for i in
                                     range(math.ceil(os.path.getsize(self._full_path(path)) / self.CHUNK_SIZE))}
 
+        # print('FILE =', self._full_path(path))
+        # print('FILE SIZE =', os.path.getsize(self._full_path(path)))
+        # print('CHUNK SIZE =', self.CHUNK_SIZE)
+        # print('CHUNK # =', math.ceil(os.path.getsize(self._full_path(path)) / self.CHUNK_SIZE))
+        # print('READ ARRAY =', self.file_read_chunks)
+        # print('WRITE ARRAY =', self.file_written_chunks)
+
         # #decrypt the file with the sym key and write it on the temporary file
         # sym_cipher = AES.new(self.meta['sym_key'][:16], AES.MODE_CTR, nonce=self.meta['nonce'])
         # #with open(self._full_path(path), 'rb') as enc_fp:
@@ -304,7 +321,8 @@ class Abebox(Passthrough):
         #     self.temp_fp.write(x)
         #     #self.temp_fp.write(sym_cipher.decrypt(chunk))
 
-        self.enc_fp.seek(0)
+        # Reset file pointers
+        self.enc_fp.seek(0)  # TODO PROBABILMENTE NON SERVE
         self.temp_fp.seek(0)
         #os.lseek(enc_fp, 0, 0)
         return self.enc_fp.fileno()
@@ -314,6 +332,7 @@ class Abebox(Passthrough):
 
 
     def create(self, path, mode, fi=None):
+
         print("Creating file ", path)
         print("full path", self._full_path(path))
 
@@ -338,13 +357,16 @@ class Abebox(Passthrough):
         # return self.temp_fp.fileno()
         # return super(Abebox, self).create(path, mode, fi)
         full_path = self._full_path(path)
-        self.enc_fp = open(full_path, 'wb+')
-        return os.open(full_path, os.O_WRONLY | os.O_CREAT, mode)
+        self.enc_fp = open(full_path, 'wb')
+        # return os.open(full_path, os.O_WRONLY | os.O_CREAT, mode)
+        return self.enc_fp.fileno()
 
 
     def release(self, path, fh):
+
         print("Releasing file ", path)
-        # pour the temp file in the dest folder
+
+        # Create AES cipher
         sym_cipher = AES.new(self.meta['sym_key'][:16], AES.MODE_CTR, nonce=self.meta['nonce'])
         # rewind file, adjust read_in_chucnk 
         # print("Release: closing, removing and open again file ", self._full_path(path))
@@ -360,12 +382,14 @@ class Abebox(Passthrough):
         # print("seeking fh")
         # os.lseek(fh, 0, os.SEEK_SET)
 
+        # Reset file pointer
         self.temp_fp.seek(0)
         print("Temporary file has size : ", self.temp_fp.seek(0, os.SEEK_END))
         # self.temp_fp.seek(0)
 
         # original_data_length = 0
 
+        # Write only modified file chunks
         # for chunk in self._read_in_chunks(self.temp_fp, self.CHUNK_SIZE):
         for chunk_num in self.file_written_chunks.keys():
             if self.file_written_chunks[chunk_num]:
@@ -374,7 +398,9 @@ class Abebox(Passthrough):
                 # os.write(fh, sym_cipher.encrypt(chunk))
                 # fh.write(sym_cipher.encrypt(chunk))
                 # Read file chunk
+                # Set file pointer to file chunk starting byte
                 self.temp_fp.seek(int(chunk_num) * self.CHUNK_SIZE)
+                # Read a file chunk from temporary file
                 chunk = self.temp_fp.read(self.CHUNK_SIZE - self.RANDOM_SIZE)
                 # Encrypt file chunk
                 enc_chunk = sym_cipher.encrypt(chunk)
@@ -382,13 +408,13 @@ class Abebox(Passthrough):
                 # original_data_length += len(enc_chunk)
                 print("Applying AONT to newly encrypted chunk")
                 aont_args = {
-                    'nBits': len(chunk) * 8 + self.RANDOM_SIZE,
-                    'k0BitsInt': self.RANDOM_SIZE
+                    'nBits': (len(chunk) + self.RANDOM_SIZE) * 8,
+                    'k0BitsInt': self.RANDOM_SIZE * 8
                 }
-                transf_enc_chunk = aont.transform(data=enc_chunk, args=aont_args)
+                transf_enc_chunk = aont.transform(data=enc_chunk, args=aont_args, debug=0)
                 print("AONT successfully applied")
                 # Write transformed encrypted chunk
-                fh.write(transf_enc_chunk)
+                os.write(fh, transf_enc_chunk)
                 print("chunk has been written on file ", fh)
         # with open(self._full_path(path), 'wb+') as enc_fp:
         #    print("Release: file opened with fp ", enc_fp)
@@ -397,7 +423,10 @@ class Abebox(Passthrough):
         #        print("release - read chunk" , chunk)
         #        enc_fp.write(sym_cipher.encrypt(chunk))
         print("Closing fs")
-        fh.close()
+        #if type(fh) == type(int):
+        os.close(fh)
+        #else:
+        #    fh.close()
         print("Closed")
 
         # self.meta['original_data_length'] = original_data_length

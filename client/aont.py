@@ -25,7 +25,7 @@ errors = 'surrogatepass'
 max_expansion_bits_len = 127*1024                   # WARNING: MAXIMUM DEPENDS ON CHOSEN EXPANSION FUNCTION
 
 
-def transform(data=None, args=None, debug=1):
+def transform(data=None, args=None, debug=0):
     """
     Apply All-Or-Nothing Transformation to the given data and return the result.
     :param data: data to transform
@@ -53,7 +53,7 @@ def transform(data=None, args=None, debug=1):
     return transf_data
 
 
-def anti_transform(data=None, args=None, debug=1):
+def anti_transform(data=None, args=None, debug=0):
     """
     Remove All-Or-Nothing Transformation to the given data and return the result.
     :param data: data to anti-transform

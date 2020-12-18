@@ -22,7 +22,7 @@ k0BitsFill = '0' + str(k0BitsInt) + 'b'
 encoding = 'utf-8'
 endian = 'big'
 errors = 'surrogatepass'
-max_expansion_bits_len = 127*1024                   # WARNING: MAXIMUM DEPENDS ON CHOSEN EXPANSION FUNCTION
+max_expansion_bits_len = 127 * 1024                 # WARNING: MAXIMUM DEPENDS ON CHOSEN EXPANSION FUNCTION
 
 
 def transform(data=None, args=None, debug=0):
@@ -72,22 +72,13 @@ def anti_transform(data=None, args=None, debug=0):
     if debug:  # ONLY USE FOR DEBUG
         print('[AONT] DATA = (%d) %s -> %s' % (len(data), data, hexlify(data)))
 
-    # Get anti-transformation params
-    # transf_data_size = len(data) // 8
-    # original_data_length = args.pop('original_data_length', None)
-
     # Remove All-Or-Nothing Transformation from data chunk
-    # anti_transf_data = remove_aont(data=data, args=args, data_length=min(transf_data_size, original_data_length),
     anti_transf_data = remove_aont(data=data, args=args, debug=debug)
 
     if debug:  # ONLY USE FOR DEBUG
         print('[AONT] ANTI-TRANSFORMED DATA = (%d) %s -> %s' % (len(anti_transf_data), anti_transf_data,
                                                                 hexlify(anti_transf_data)))
 
-    # Decrease remaining original data length
-    # original_data_length -= len(anti_transf_data)
-
-    # return anti_transf_data, original_data_length
     return anti_transf_data
 
 
@@ -129,13 +120,11 @@ def apply_aont(data=None, args=None, debug=0):
     return transformed_data_bytes
 
 
-# def remove_aont(data=None, args=None, data_length=None, debug=0):
 def remove_aont(data=None, args=None, debug=0):
     """
     Remove All-Or-Nothing Transformation from the given data
     :param data: data to transform
     :param args: AONT configuration parameters
-    :param data_length: data length
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return a string containing anti-transformed data
     """
@@ -146,13 +135,6 @@ def remove_aont(data=None, args=None, debug=0):
         if debug:  # ONLY USE FOR DEBUG
             print('[AONT] in remove_aont: data exception')
         raise Exception
-
-    # Check if data length is set
-    # if data_length is None:
-    #     logging.error('[AONT] in remove_aont: data exception')
-    #     if debug:  # ONLY USE FOR DEBUG
-    #         print('[AONT] in remove_aont: data exception')
-    #     raise Exception
 
     if debug:  # ONLY USE FOR DEBUG
         print('DATA BYTES = (%d) %s' % (len(data), data))
@@ -174,13 +156,6 @@ def remove_aont(data=None, args=None, debug=0):
     if debug:  # ONLY USE FOR DEBUG
         print('ANTI-TRANSFORMED DATA BYTES = (%d) %s' % (len(anti_transformed_data_bytes), anti_transformed_data_bytes))
 
-    # Truncate any existing padding trailing zeros
-    # anti_transformed_data_bytes = anti_transformed_data_bytes[: data_length]
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('CUT ANTI-TRANSFORMED DATA BYTES = (%d) %s' % (len(anti_transformed_data_bytes),
-                                                             anti_transformed_data_bytes))
-
     return anti_transformed_data_bytes
 
 
@@ -190,6 +165,7 @@ def hex_to_binary(msg=None, debug=0):
     """
     Convert a hexadecimal string into a binary one and fill with leading zeros.
     :param msg: hexadecimal string to convert
+    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: binary string with leading zeros
     """
 
@@ -213,18 +189,21 @@ def hex_to_binary(msg=None, debug=0):
     return bits.zfill(len(msg) * 4)
 
 
-def init(args=None):
+def init(args=None, debug=0):
     """
     Initialise OAEP parameters.
     :param args: configuration parameters
+    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     """
 
+    # Check if args is set and it contains some values
     if args is None or len(args) == 0:
         return
 
-    global nBits, k0BitsInt, n_k0BitsFill, k0BitsFill, encoding, endian, errors
+    if debug:  # ONLY USE FOR DEBUG
+        print('IN AONT INIT: args =', args)
 
-    print('IN AONT INIT: args =', args)
+    global nBits, k0BitsInt, n_k0BitsFill, k0BitsFill, encoding, endian, errors
 
     if 'nBits' in args.keys():
         nBits = args['nBits']
@@ -257,43 +236,36 @@ def pad(msg, debug=0):
     if debug:  # ONLY USE FOR DEBUG
         print('RAND BIT STRING = (%d) %s' % (len(rand_bytes), rand_bytes))
 
-    # Change msg string to a binary string
+    # Convert msg string to a binary string
     bin_msg = hex_to_binary(msg, debug)
-
-    # zero_padded_msg = bin_msg
-
-    # If the input msg has a binary length shorter than (nBits-k0Bits) then append k1Bits 0s to the end of the msg
-    # (where k1Bits is the number of bits to make len(binMsg) = (nBits-k0Bits))
-    # if len(bin_msg) <= (nBits - k0BitsInt):
-    #     k1_bits = nBits - k0BitsInt - len(bin_msg)
-    #     zero_padded_msg += ('0' * k1_bits)
-
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('ZERO PADDED MSG = (%d) %s' % (len(zero_padded_msg), zero_padded_msg))
 
     # Using generated random bytes as seed for prng, generate random strings until their concatenation has a length
     # equal to zero_padded_msg's one (expansion of r, G(r))
     random.seed(a=rand_bytes)
     g_r = b''
     remaining_bits_len = len(bin_msg)
-    # remaining_bits_len = len(zero_padded_msg)
 
     while len(g_r) * 8 < len(bin_msg):
 
         if debug:  # ONLY USE FOR DEBUG
             print('REMAINING BITS LEN =', remaining_bits_len)
 
+        # Compute number of bits to generate
         random_bits_len = min(max_expansion_bits_len, remaining_bits_len)
 
         if debug:  # ONLY USE FOR DEBUG
             print('RANDOM BITS LEN =', random_bits_len)
 
+        # Generate a chunk of random bits
         random_bits = random.getrandbits(random_bits_len).to_bytes(random_bits_len // 8, endian)
 
         if debug:  # ONLY USE FOR DEBUG
             print('RANDOM BITS = (%d) %s' % (len(random_bits), random_bits))
 
+        # Append random chunk
         g_r += random_bits
+
+        # Update remaining bits to generate
         remaining_bits_len -= len(random_bits) * 8
 
     if debug:  # ONLY USE FOR DEBUG
@@ -301,7 +273,6 @@ def pad(msg, debug=0):
 
     # Compute X as zero_padded_msg XOR G(r)
     x = format(int(bin_msg, 2) ^ int.from_bytes(g_r, byteorder=endian), n_k0BitsFill)
-    # x = format(int(zero_padded_msg, 2) ^ int.from_bytes(g_r, byteorder=endian), n_k0BitsFill)
 
     if debug:  # ONLY USE FOR DEBUG
         print('X = (%d) %s' % (len(x), x))
@@ -370,26 +341,31 @@ def unpad(msg, debug=0):
         if debug:  # ONLY USE FOR DEBUG
             print('REMAINING BITS LEN =', remaining_bits_len)
 
+        # Compute number of bits to generate
         random_bits_len = min(max_expansion_bits_len, remaining_bits_len)
 
         if debug:  # ONLY USE FOR DEBUG
             print('RANDOM BITS LEN =', random_bits_len)
 
+        # Generate a chunk of random bits
         random_bits = random.getrandbits(random_bits_len).to_bytes(random_bits_len // 8, endian)
 
         if debug:  # ONLY USE FOR DEBUG
             print('RANDOM BITS = (%d) %s' % (len(random_bits), random_bits))
 
+        # Append random chunk
         g_r += random_bits
+
+        # Update remaining bits to generate
         remaining_bits_len -= len(random_bits) * 8
 
     if debug:  # ONLY USE FOR DEBUG
         print('G(r) = (%d) %s' % (len(g_r), g_r))
 
-    # Recover original message padded with 0s as X XOR G(r)
-    msg_with_0s = format(int(x, 2) ^ int.from_bytes(g_r, byteorder=endian), n_k0BitsFill)
+    # Recover original message as X XOR G(r)
+    msg = format(int(x, 2) ^ int.from_bytes(g_r, byteorder=endian), n_k0BitsFill)
 
     if debug:  # ONLY USE FOR DEBUG
-        print('EXTRACTED MSG WITH 0s = (%d) %s' % (len(msg_with_0s), msg_with_0s))
+        print('EXTRACTED MSG = (%d) %s' % (len(msg), msg))
 
-    return msg_with_0s
+    return msg

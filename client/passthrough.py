@@ -39,8 +39,10 @@ class Passthrough(Operations):
         return os.chown(full_path, uid, gid)
 
     def getattr(self, path, fh=None):
+        print('getattr', path)
         full_path = self._full_path(path)
         st = os.lstat(full_path)
+        print('st', st)
         return dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
                      'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
 
@@ -72,6 +74,7 @@ class Passthrough(Operations):
         return os.mkdir(self._full_path(path), mode)
 
     def statfs(self, path):
+        print('statfs', path)
         full_path = self._full_path(path)
         stv = os.statvfs(full_path)
         return dict((key, getattr(stv, key)) for key in ('f_bavail', 'f_bfree',
@@ -97,12 +100,12 @@ class Passthrough(Operations):
     # ============
 
     def open(self, path, flags):
-        print("open")
+        print("open", path)
         full_path = self._full_path(path)
         return os.open(full_path, flags)
 
     def create(self, path, mode, fi=None):
-        print("create")
+        print("create", path)
         full_path = self._full_path(path)
         return os.open(full_path, os.O_WRONLY | os.O_CREAT, mode)
 
@@ -112,6 +115,7 @@ class Passthrough(Operations):
         return os.read(fh, length)
 
     def write(self, path, buf, offset, fh):
+        print("path", path)
         print("write", offset)
         print("len", len(buf))
         os.lseek(fh, offset, os.SEEK_SET)
@@ -123,15 +127,15 @@ class Passthrough(Operations):
             f.truncate(length)
 
     def flush(self, path, fh):
-        print("flush")
+        print("flush", path)
         return os.fsync(fh)
 
     def release(self, path, fh):
-        print("release")
+        print("release", path)
         return os.close(fh)
 
     def fsync(self, path, fdatasync, fh):
-        print("fsync")
+        print("fsync", path, fdatasync)
         return self.flush(path, fh)
 
 

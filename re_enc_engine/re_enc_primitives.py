@@ -605,7 +605,7 @@ def encrypt_seed_key_len(data=None, pk_file=None, policy=None, debug=0):
     from re_enc_engine.abe_primitives import encrypt
 
     # Encrypt temporary file with ABE
-    encrypt(enc_outfile=enc_temp_file, pk_file=pk_file, plaintext_file=temp_file, policy=policy, debug=debug)
+    encrypt(enc_outfile=enc_temp_file, pk_file=pk_file, plaintext_file=temp_file, plaintext=data, policy=policy, debug=debug)
 
     # Read encryption result from the output file
     enc_data = read_bytes_from_file(enc_temp_file, debug)

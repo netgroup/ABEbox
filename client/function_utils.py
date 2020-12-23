@@ -2,6 +2,12 @@
 This file contains all the common basic functions used from the software.
 """
 
+from const import LOG_FILE_PATH, LOG_FILE_NAME
+from datetime import datetime
+
+import logging
+import os.path
+
 
 def generate_random_string(length=None, debug=0):
     """
@@ -10,8 +16,6 @@ def generate_random_string(length=None, debug=0):
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: the random bytes string
     """
-
-    import logging
 
     # Check if length is set
     if length is None:
@@ -55,9 +59,6 @@ def read_bytes_from_file(infile=None, debug=0):
     :return: read bytes
     """
 
-    import logging
-    import os.path
-
     # Check if infile is set and it exists
     if infile is None or not os.path.isfile(infile):
         logging.error('read_file_bytes infile exception')
@@ -78,8 +79,6 @@ def write_bytes_on_file(outfile=None, data=None, mode='wb', offset=0, debug=0):
     :param offset: file offset
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     """
-
-    import logging
 
     # Check if outfile is set
     if outfile is None:
@@ -105,10 +104,8 @@ def clear_folder(folder_path=None, debug=0):
     """
     Delete data files in the specified folder generated from previous executions.
     :param folder_path: directory whose files have to be deleted
+    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     """
-
-    import logging
-    import os
 
     # Check if folder_path is set and it exists
     if folder_path is None or not os.path.isdir(folder_path):
@@ -133,9 +130,9 @@ def init_logger():
     Initialise logger
     """
 
-    from old.crypto.Const import LOG_FILE_PATH, LOG_FILE_NAME
-    from datetime import datetime
-    import logging
+    # Create log file directory if it does not exist
+    if not os.path.isdir(LOG_FILE_PATH):
+        os.mkdir(LOG_FILE_PATH)
 
     # Get current time
     current_time = datetime.now()

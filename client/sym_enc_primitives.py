@@ -2,56 +2,47 @@
 This file contains AES-GCM symmetric encryption scheme primitives.
 """
 
-from re_enc_engine.const import PAIRING_GROUP_CURVE
+from const import IV_DEFAULT_SIZE, SYM_KEY_DEFAULT_SIZE, SYM_KEY_MIN_SIZE
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from function_utils import clamp, generate_random_string
 
 import logging
+import math
+import sys
 
 
-def sym_key_gen(sym_key_size=None, pairing_group_curve=PAIRING_GROUP_CURVE, debug=0):
+def sym_key_gen(sym_key_size=None, debug=0):
     """
-    TODO Correct documentation
     Generate a random symmetric key with given size.
     :param sym_key_size: length in bytes of the symmetric key
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: the randomly generated symmetric key
     """
 
-    # from old.crypto.Const import SYM_KEY_MIN_SIZE, SYM_KEY_DEFAULT_SIZE
-    # from old.FunctionUtils import clamp, generate_random_string
-    #
-    # # If sym_key_size is not defined, set a default value
-    # if sym_key_size is None:
-    #     sym_key_size = SYM_KEY_DEFAULT_SIZE
-    #
-    # import sys
-    #
-    # # Clamp the size between SYM_KEY_MIN_SIZE and the system maximum possible value
-    # size = clamp(sym_key_size, SYM_KEY_MIN_SIZE, sys.maxsize)
-    #
-    # # Check if an error occurred during clamping
-    # if size is None:
-    #     logging.error('sym_key_gen clamp size exception')
-    #     if debug:  # ONLY USE FOR DEBUG
-    #         print('EXCEPTION in sym_key_gen clamp size')
-    #     raise Exception
-    #
-    # import math
-    #
-    # # Check if size is a power of 2
-    # if not math.log2(size).is_integer():
-    #     logging.error('sym_key_gen size exception')
-    #     if debug:  # ONLY USE FOR DEBUG
-    #         print('EXCEPTION in sym_key_gen size')
-    #     raise Exception
-    #
-    # # Generate and return a random symmetric key with the given size
-    # return generate_random_string(length=size, debug=debug)
+    # If sym_key_size is not defined, set a default value
+    if sym_key_size is None:
+        sym_key_size = SYM_KEY_DEFAULT_SIZE
 
-    from re_enc_engine.abe_primitives import get_random_group_point
+    # Clamp the size between SYM_KEY_MIN_SIZE and the system maximum possible value
+    size = clamp(sym_key_size, SYM_KEY_MIN_SIZE, sys.maxsize)
 
-    return get_random_group_point(pairing_group_curve=pairing_group_curve, debug=debug)
+    # Check if an error occurred during clamping
+    if size is None:
+        logging.error('sym_key_gen clamp size exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in sym_key_gen clamp size')
+        raise Exception
+
+    # Check if size is a power of 2
+    if not math.log2(size).is_integer():
+        logging.error('sym_key_gen size exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in sym_key_gen size')
+        raise Exception
+
+    # Generate and return a random symmetric key with the given size
+    return generate_random_string(size, debug)
 
 
 def generate_iv(iv_length=None, debug=0):
@@ -62,14 +53,9 @@ def generate_iv(iv_length=None, debug=0):
     :return: the randomly generated IV
     """
 
-    from old.crypto.Const import IV_DEFAULT_SIZE
-
     # If iv_length is not defined, set a default value
     if iv_length is None:
         iv_length = IV_DEFAULT_SIZE
-
-    from old.FunctionUtils import clamp, generate_random_string
-    import sys
 
     # Clamp the size between IV_DEFAULT_SIZE and the system maximum possible value
     length = clamp(iv_length, IV_DEFAULT_SIZE, sys.maxsize)
@@ -81,8 +67,6 @@ def generate_iv(iv_length=None, debug=0):
             print('EXCEPTION in generate_iv clamp length')
         raise Exception
 
-    import math
-
     # Check if length is a power of 2
     if not math.log2(length).is_integer():
         logging.error('generate_iv length exception')
@@ -91,7 +75,7 @@ def generate_iv(iv_length=None, debug=0):
         raise Exception
 
     # Generate and return a random IV with the given length
-    return generate_random_string(length=iv_length, debug=debug)
+    return generate_random_string(iv_length, debug)
 
 
 def sym_encrypt(key=None, iv=None, plaintext=None, debug=0):
@@ -126,7 +110,6 @@ def sym_encrypt(key=None, iv=None, plaintext=None, debug=0):
         raise Exception
 
     # Construct an AES-GCM Cipher object with the given key and IV
-    #encryptor = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend()).encryptor()
     encryptor = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend()).encryptor()
 
     # Encrypt the plaintext and get the associated ciphertext (GCM does not require padding)

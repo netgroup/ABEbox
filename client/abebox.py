@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from Crypto.Cipher import AES
-from charm.toolbox.pairinggroup import PairingGroup, GT 
+from charm.toolbox.pairinggroup import PairingGroup, GT
 from charm.core.math.pairing import hashPair as extractor
 #from charm.toolbox.node import BinNode
 from charm.toolbox.policytree import PolicyParser
@@ -20,6 +20,7 @@ from fuse import FUSE, FuseOSError, Operations
 from passthrough import Passthrough
 
 import aont
+import re_enc_primitives as re_enc
 
 import logging
 logging.basicConfig()
@@ -33,7 +34,7 @@ class Abebox(Passthrough):
         self.CHUNK_SIZE = 1024
         self.RANDOM_SIZE = 32
 
-        #load abe key
+        #load abe keys
         self._load_abe_keys(str(Path.home()) + '/.abe_keys')
 
         super(Abebox, self).__init__(root)
@@ -57,8 +58,11 @@ class Abebox(Passthrough):
             data = json.load(f)
 
         self.pairing_group = PairingGroup('MNT224')
-        self.abe_pk = bytesToObject(bytes.fromhex(data['pk']), self.pairing_group)
-        self.abe_sk = bytesToObject(bytes.fromhex(data['sk']), self.pairing_group)
+        self.abe_pk = {}
+        self.abe_sk = {}
+        for abe_key_pair in data.keys():
+            self.abe_pk[abe_key_pair] = bytesToObject(bytes.fromhex(data[abe_key_pair]['pk']), self.pairing_group)
+            self.abe_sk[abe_key_pair] = bytesToObject(bytes.fromhex(data[abe_key_pair]['sk']), self.pairing_group)
         self.cpabe = AC17CPABE(self.pairing_group, 2)
 
     def _create_meta(self):
@@ -73,7 +77,8 @@ class Abebox(Passthrough):
             'nonce': secrets.token_bytes(8),
             'policy': '(DEPT1 and TEAM1)',  # hardcoded - TBD
             'chunk_size': self.CHUNK_SIZE,
-            'random_size': self.RANDOM_SIZE
+            'random_size': self.RANDOM_SIZE,
+            're_encs': []
         }
 
         # self.sym_cipher = SymmetricCryptoAbstraction(self.meta['sym_key'])
@@ -103,16 +108,17 @@ class Abebox(Passthrough):
         print("sk: ", self.abe_sk)
         print("policy: ", enc_el['policy'])
 
-        el = self.cpabe.decrypt(self.abe_pk, enc_el, self.abe_sk)
+        el = self.cpabe.decrypt(next(iter(self.abe_pk.values())), enc_el, next(iter(self.abe_sk.values())))
 
         # load all in clear
         self.meta = {
             'el': el,
             'sym_key': extractor(el),
             'nonce': bytearray.fromhex(enc_meta['nonce']),
-            'policy': enc_meta['policy'], #'(DEPT1 and TEAM1)', # hardcoded - TBD
+            'policy': enc_meta['policy'],  # '(DEPT1 and TEAM1)', # hardcoded - TBD
             'chunk_size': enc_meta['chunk_size'],
-            'random_size': enc_meta['random_size']
+            'random_size': enc_meta['random_size'],
+            're_encs': enc_meta['re_encs']
             # 'original_data_length': enc_meta['original_data_length']
         }
 
@@ -129,7 +135,8 @@ class Abebox(Passthrough):
         """
         print("dumping metadata on file ", metafile)
         # we need to handle separately enc_el (charm.toolbox.node.BinNode) as there is no serializer
-        enc_el = self.cpabe.encrypt(self.abe_pk, self.meta['el'], self.meta['policy'])
+        print('\n\n\nTO ENC = (%s) %s' % (type(self.meta['el']), self.meta['el']))
+        enc_el = self.cpabe.encrypt(next(iter(self.abe_pk.values())), self.meta['el'], self.meta['policy'])
         policy = enc_el.pop('policy')
 
         # print('IN _DUMP_META:', self.meta['original_data_length'])
@@ -140,7 +147,8 @@ class Abebox(Passthrough):
             'nonce': self.meta['nonce'].hex(),
             'enc_el': objectToBytes(enc_el, self.pairing_group).hex(),
             'chunk_size': self.meta['chunk_size'],
-            'random_size': self.meta['random_size']
+            'random_size': self.meta['random_size'],
+            're_encs': self.meta['re_encs']
             # 'original_data_length': self.meta['original_data_length']
         }
         with open(metafile, 'w') as f:
@@ -164,11 +172,25 @@ class Abebox(Passthrough):
         # Read file chunk
         chunk = self.enc_fp.read(self.meta['chunk_size'])
 
-        # original_data_len = self.CHUNK_SIZE
-
-        # Check if reading last file chunk
-        # if chunk_num == os.path.getsize(full_path) // self.CHUNK_SIZE:
-        #     original_data_len = self.meta['original_data_length'] % (self.CHUNK_SIZE - self.RANDOM_SIZE)
+        # TODO REMOVE RE-ENCs
+        print("Remove re-encryptions from file chunk")
+        re_enc_ops_num = len(self.meta['re_encs'])
+        if re_enc_ops_num > 0:
+            for i in range(re_enc_ops_num):
+                re_enc_op = self.meta['re_encs'][re_enc_ops_num - 1 - i]
+                key_pair_label = re_enc_op['pk']
+                pk = self.abe_pk[key_pair_label]
+                sk = self.abe_pk[key_pair_label]
+                re_enc_args = {
+                    'pk': pk,
+                    'sk': sk,
+                    'enc_params': re_enc_op['enc_params'],
+                    'iv': re_enc_op['iv']
+                }
+                chunk = re_enc.re_decrypt(data=chunk, args=re_enc_args, debug=0)
+                print("DE-RE-ENCRYPTED CHUNK = (%d) %s" % (len(chunk), chunk))
+                print("Re-encryption successfully removed")
+            print("Re-encryptions successfully removed")
 
         # Anti-transform file chunk
         print("Remove AONT from encrypted file chunk")
@@ -178,7 +200,7 @@ class Abebox(Passthrough):
             # 'original_data_length': original_data_len
         }
         chunk = aont.anti_transform(data=chunk, args=aont_args, debug=0)
-        print("CHUNK = (%d) %s" % (len(chunk), chunk))
+        print("ANTI-TRANSFORMED CHUNK = (%d) %s" % (len(chunk), chunk))
         print("AONT successfully removed")
 
         # Decrypt the anti-transformed file chunk with the sym key and write it on the temporary file
@@ -433,9 +455,30 @@ class Abebox(Passthrough):
                 }
                 transf_enc_chunk = aont.transform(data=enc_chunk, args=aont_args, debug=0)
                 print("AONT successfully applied")
+
+                # TODO RE-APPLY PREVIOUS RE-ENCs
+                re_enc_transf_enc_chunk = transf_enc_chunk
+                print("Re-applying re-encryptions to file chunk")
+                if len(self.meta['re_encs']) > 0:
+                    for re_enc_op in self.meta['re_encs']:
+                        key_pair_label = re_enc_op['pk']
+                        pk = self.abe_pk[key_pair_label]
+                        sk = self.abe_pk[key_pair_label]
+                        re_enc_args = {
+                            'pk': pk,
+                            'sk': sk,
+                            'enc_params': re_enc_op['enc_params'],
+                            'iv': re_enc_op['iv']
+                        }
+                        re_enc_transf_enc_chunk = re_enc.re_encrypt(data=re_enc_transf_enc_chunk, args=re_enc_args,
+                                                                    debug=0)
+                        print("RE-ENCRYPTED CHUNK = (%d) %s" % (len(re_enc_transf_enc_chunk), re_enc_transf_enc_chunk))
+                        print("Re-encryption successfully re-applied")
+                    print("Re-encryptions successfully re-applied")
+
                 # Write transformed encrypted chunk
-                os.write(fh, transf_enc_chunk)
-                print("chunk (%d) %s has been written on file %d" % (len(transf_enc_chunk), transf_enc_chunk, fh))
+                os.write(fh, re_enc_transf_enc_chunk)
+                print("chunk (%d) %s has been written on file %d" % (len(re_enc_transf_enc_chunk), re_enc_transf_enc_chunk, fh))
         # with open(self._full_path(path), 'wb+') as enc_fp:
         #    print("Release: file opened with fp ", enc_fp)
         #    print("release: writing back from tempfile", self.temp_fp.file.name)

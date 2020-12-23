@@ -4,7 +4,7 @@ cpabe and libbswabe of John Bethencourt, Amit Sahai and Brent Waters. Full detai
 the following link http://acsc.cs.utexas.edu/cpabe/.
 """
 
-from crypto.Const import ABE_PK_FILE, ABE_MSK_FILE, ABE_SK_FILE
+from old.crypto.Const import ABE_PK_FILE, ABE_MSK_FILE, ABE_SK_FILE
 
 import logging
 import os.path

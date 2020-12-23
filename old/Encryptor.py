@@ -4,7 +4,7 @@ encryption is applied to the plaintext. Then the resulting ciphertext needs to b
 transformation.
 """
 
-from crypto.Const import AONT_DEFAULT_ENCODING, AONT_DEFAULT_N, AONT_DEFAULT_K0, CHUNK_SIZE
+from old.crypto.Const import AONT_DEFAULT_ENCODING, AONT_DEFAULT_N, AONT_DEFAULT_K0, CHUNK_SIZE
 
 
 def create_encrypted_file(plaintext_infile=None, ciphertext_outfile=None, pk_file=None, policy=None, n=AONT_DEFAULT_N,
@@ -22,8 +22,8 @@ def create_encrypted_file(plaintext_infile=None, ciphertext_outfile=None, pk_fil
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     """
 
-    from crypto.SymEncPrimitives import sym_key_gen
-    from crypto.Const import SYM_KEY_DEFAULT_SIZE, VERSION
+    from old.crypto.SymEncPrimitives import sym_key_gen
+    from old.crypto.Const import SYM_KEY_DEFAULT_SIZE, VERSION
     from binascii import hexlify
     import logging
     import os
@@ -50,13 +50,13 @@ def create_encrypted_file(plaintext_infile=None, ciphertext_outfile=None, pk_fil
         raise Exception
 
     # Create the key for symmetric encryption of the plaintext
-    sym_key = sym_key_gen(SYM_KEY_DEFAULT_SIZE, debug)
+    sym_key = sym_key_gen(sym_key_size=SYM_KEY_DEFAULT_SIZE, debug=debug)
 
     if debug:  # ONLY USE FOR DEBUG
-        print('[ENCRYPTOR] SYM KEY = (%d) %s -> %s' % (len(sym_key), sym_key, hexlify(sym_key)))
+        print('[ENCRYPTOR] SYM KEY =', sym_key)
 
-    from crypto.SymEncPrimitives import generate_iv
-    from crypto.Const import IV_DEFAULT_SIZE
+    from old.crypto.SymEncPrimitives import generate_iv
+    from old.crypto.Const import IV_DEFAULT_SIZE
 
     # Create the initialisation vector for symmetric encryption
     iv = generate_iv(IV_DEFAULT_SIZE, debug)
@@ -133,7 +133,7 @@ def apply_enc_aont(plaintext_infile=None, ciphertext_outfile=None, key=None, iv=
             print('EXCEPTION in apply_enc_aont IV')
         raise Exception
 
-    from crypto.SymEncPrimitives import sym_encrypt
+    from old.crypto.SymEncPrimitives import sym_encrypt
     from binascii import hexlify
 
     # Read data chunk from the plaintext input file
@@ -210,7 +210,7 @@ def apply_aont(data=None, n=AONT_DEFAULT_N, encoding=AONT_DEFAULT_ENCODING, k0=A
         if debug:  # ONLY USE FOR DEBUG
             print('TO_TRANSFORM = (%d) %s' % (len(to_transform), to_transform))
 
-        from crypto.OAEPbis import init, pad
+        from old.crypto.OAEPbis import init, pad
         from binascii import hexlify
 
         # Initialise transformation parameters
@@ -274,24 +274,25 @@ def encrypt_sym_key(key=None, pk_file=None, policy=None, debug=0):
             print('EXCEPTION in encrypt_sym_key policy')
         raise Exception
 
-    from crypto.Const import TEMP_PATH
+    from old.crypto.Const import TEMP_PATH
 
     # Define temporary files for key encryption
     temp_sym_key_file = 'sym_key'
     temp_enc_sym_key_file = 'enc_' + temp_sym_key_file
 
     # Write key on temporary file
-    with(open(TEMP_PATH + temp_sym_key_file, 'wb')) as fout:
-        fout.write(key)
+    # with(open(TEMP_PATH + temp_sym_key_file, 'wb')) as fout:
+    # with(open(TEMP_PATH + temp_sym_key_file, 'w')) as fout:
+    #    fout.write(key)
 
-    from crypto.ABEPrimitives import encrypt
+    from re_enc_engine.abe_primitives import encrypt
 
     # Encrypt temporary key file with ABE
     encrypt(enc_outfile=TEMP_PATH + temp_enc_sym_key_file, pk_file=pk_file,
-            plaintext_file=TEMP_PATH + temp_sym_key_file, policy=policy, debug=debug)
+            plaintext_file=TEMP_PATH + temp_sym_key_file, plaintext=key, policy=policy, debug=debug)
 
     # Read encrypted key from temporary outfile
-    with(open(TEMP_PATH + temp_enc_sym_key_file, 'rb')) as fin:
+    with(open(TEMP_PATH + temp_enc_sym_key_file, 'r')) as fin:
         enc_key = fin.read()
 
     # Delete temporary files

@@ -9,6 +9,8 @@ from charm.core.engine.util import objectToBytes, bytesToObject
 from ABE.ac17 import AC17CPABE
 
 from pathlib import Path
+
+import hashlib
 import json
 
 
@@ -39,9 +41,11 @@ def main():
     print(user_key)
 
     data = {
-        'pk': objectToBytes(pk, pairing_group).hex(),
-        #'msk': msk,
-        'sk': objectToBytes(user_key, pairing_group).hex(),
+        hashlib.sha256(objectToBytes(pk, pairing_group)).hexdigest(): {
+            'pk': objectToBytes(pk, pairing_group).hex(),
+            #'msk': msk,
+            'sk': objectToBytes(user_key, pairing_group).hex(),
+        }
     }
 
     #print(json.dumps(data))

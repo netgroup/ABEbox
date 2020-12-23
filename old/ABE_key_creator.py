@@ -2,8 +2,8 @@
 This file contains all the functions used to create ABE keys.
 """
 
-from crypto.ABEPrimitives import setup, keygen
-from crypto.Const import KEY_PATH, ABE_PK_FILE, ABE_MSK_FILE, ABE_SK_FILE
+from re_enc_engine.abe_primitives import setup, keygen
+from old.crypto.Const import KEY_PATH, ABE_PK_FILE, ABE_MSK_FILE, ABE_SK_FILE
 import logging
 
 
@@ -18,12 +18,12 @@ def key_setup(pk_file=KEY_PATH + ABE_PK_FILE, msk_file=KEY_PATH + ABE_MSK_FILE, 
     # Create ABE public and master secret keys and save them in the given output files
     setup(pk_outfile=pk_file, msk_outfile=msk_file, debug=debug)
 
-    if debug:  # ONLY USE FOR DEBUG
-        from binascii import hexlify
-        pk = open(pk_file, 'rb').read()
-        print('PUB KEY = (%d) %s -> %s' % (len(pk), pk, hexlify(pk)))
-        msk = open(msk_file, 'rb').read()
-        print('MASTER SECRET KEY = (%d) %s -> %s' % (len(msk), msk, hexlify(msk)))
+    # if debug:  # ONLY USE FOR DEBUG
+    #     from binascii import hexlify
+    #     pk = open(pk_file, 'rb').read()
+    #     print('PUB KEY = (%d) %s -> %s' % (len(pk), pk, hexlify(pk)))
+    #     msk = open(msk_file, 'rb').read()
+    #     print('MASTER SECRET KEY = (%d) %s -> %s' % (len(msk), msk, hexlify(msk)))
 
 
 def secret_key_gen(sk_file=KEY_PATH + ABE_SK_FILE, pk_file=KEY_PATH + ABE_PK_FILE, msk_file=KEY_PATH + ABE_MSK_FILE,
@@ -41,7 +41,7 @@ def secret_key_gen(sk_file=KEY_PATH + ABE_SK_FILE, pk_file=KEY_PATH + ABE_PK_FIL
     # in the given output file
     keygen(sk_outfile=sk_file, pk_file=pk_file, msk_file=msk_file, attr_list=attr_list, debug=debug)
 
-    if debug:  # ONLY USE FOR DEBUG
-        from binascii import hexlify
-        sk = open(sk_file, 'rb').read()
-        print('SECRET KEY = (%d) %s -> %s' % (len(sk), sk, hexlify(sk)))
+    # if debug:  # ONLY USE FOR DEBUG
+    #     from binascii import hexlify
+    #     sk = open(sk_file, 'rb').read()
+    #     print('SECRET KEY = (%d) %s -> %s' % (len(sk), sk, hexlify(sk)))

@@ -6,7 +6,7 @@ https://github.com/Brandon-Everhart/OAEP/blob/master/OAEP.py.
 
 import hashlib                      # SHA-256
 from secrets import SystemRandom    # Generate secure random numbers
-from crypto.Const import AONT_DEFAULT_N, AONT_DEFAULT_ENCODING, AONT_DEFAULT_K0, AONT_DEFAULT_K0_FILL, \
+from old.crypto.Const import AONT_DEFAULT_N, AONT_DEFAULT_ENCODING, AONT_DEFAULT_K0, AONT_DEFAULT_K0_FILL, \
     AONT_DEFAULT_N_K0_FILL
 
 # Global variables

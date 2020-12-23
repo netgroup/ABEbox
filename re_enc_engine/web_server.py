@@ -175,35 +175,40 @@ class GetFilesList(Resource):
 class SendReEncInfo(Resource):
 
     # Models for request parameters structure
+    # input_model1 = api.model('Params', {
+    #     const.COMPANY_ID: fields.String,
+    #     const.TIME_INTERVAL: fields.Integer(min=0),
+    #     const.FULL: fields.Boolean,
+    #     const.RE_ENC_DATA: fields.List(fields.Nested(api.model('File re-encryption info', {
+    #         const.FILE_NAME: fields.String,
+    #         const.PUB_KEYS: fields.List(fields.String),
+    #         const.POLICIES: fields.List(fields.String),
+    #         const.RE_ENC_LENGTHS: fields.List(fields.Integer)
+    #     })), description='Used if file-level re-encryption is required (full = False)')
+    # })
+    #
+    # input_model2 = api.model('Params', {
+    #     const.COMPANY_ID: fields.String,
+    #     const.TIME_INTERVAL: fields.Integer(min=0),
+    #     const.FULL: fields.Boolean,
+    #     const.RE_ENC_DATA: fields.List(fields.Nested(api.model('Full root directory re-encryption info', {
+    #         const.PUB_KEYS: fields.List(fields.String),
+    #         const.POLICIES: fields.List(fields.String),
+    #         const.RE_ENC_LENGTHS: fields.List(fields.Integer)
+    #     })), description='Used if directory-level re-encryption is required (full = True)')
+    # })
+
     input_model1 = api.model('Params', {
         const.COMPANY_ID: fields.String,
-        const.TIMELY: fields.Boolean(),
         const.TIME_INTERVAL: fields.Integer(min=0),
-        const.FULL: fields.Boolean,
-        const.RE_ENC_DATA: fields.List(fields.Nested(api.model('File re-encryption info', {
-            const.FILE_NAME: fields.String,
-            const.PUB_KEYS: fields.List(fields.String),
-            const.POLICIES: fields.List(fields.String),
-            const.RE_ENC_LENGTHS: fields.List(fields.Integer)
-        })), description='Used if file-level re-encryption is required (full = False)')
-    })
-
-    input_model2 = api.model('Params', {
-        const.COMPANY_ID: fields.String,
-        const.TIMELY: fields.Boolean(),
-        const.TIME_INTERVAL: fields.Integer(min=0),
-        const.FULL: fields.Boolean,
-        const.RE_ENC_DATA: fields.List(fields.Nested(api.model('Full root directory re-encryption info', {
-            const.PUB_KEYS: fields.List(fields.String),
-            const.POLICIES: fields.List(fields.String),
-            const.RE_ENC_LENGTHS: fields.List(fields.Integer)
-        })), description='Used if directory-level re-encryption is required (full = True)')
+        const.FULL: fields.Integer,
+        const.RE_ENC_DATA: fields.List
     })
 
     @api.expect(input_model1)
-    @api.expect(input_model2)
+    # @api.expect(input_model2)
     @api.response(const.OK, 'Re-encryption success!')
-    @api.response(const.NO_RESULT[1], const.NO_RESULT[0])
+    # @api.response(const.NO_RESULT[1], const.NO_RESULT[0])
     def post(self):
         """
         Try to execute the specified re-encryption operation.
@@ -238,8 +243,9 @@ class SendReEncInfo(Resource):
             print('Request body successfully obtained!')
             print('Saving sent public key files...')
 
-        # Save sent public key files
-        handler.save_files(pub_key_files, re_enc_data[const.COMPANY_ID] + '/' + const.KEY_PATH, debug)
+        # Save public key files if they have been sent
+        if len(pub_key_files) > 0:
+            handler.save_files(pub_key_files, re_enc_data[const.COMPANY_ID] + '/' + const.KEY_PATH, debug)
 
         logging.info('Public key files saved!')
         logging.info('Starting re-encryption process...')

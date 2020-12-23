@@ -4,7 +4,7 @@ operations have to be decrypted. Next the resulting ciphertext needs to be anti-
 encryption has to be decrypted.
 """
 
-from crypto.Const import AONT_DEFAULT_ENCODING, AONT_DEFAULT_N, AONT_DEFAULT_K0, OUTPUT_PATH
+from old.crypto.Const import AONT_DEFAULT_ENCODING, AONT_DEFAULT_N, AONT_DEFAULT_K0, OUTPUT_PATH
 
 
 def decrypt_file(ciphertext_infile=None, pk_files=None, sk_files=None, debug=None):
@@ -118,7 +118,7 @@ def remove_re_encryptions(infile=None, pk_files=None, sk_files=None, debug=0):
                 print('EXCEPTION in remove_re_encryptions sk_files element')
             raise Exception
 
-    from crypto.ReEncPrimitives import re_decrypt
+    from old.crypto.ReEncPrimitives import re_decrypt
 
     # Remove all re-encryptions from the ciphertext file (reverse order: start from last re-encryption)
     for i in range(len(pk_files)):
@@ -210,7 +210,7 @@ def get_encryption_params(infile=None, debug=0):
     # Retrieve params from the given file
     with(open(infile, 'rb')) as fin:
 
-        from crypto.Const import B, H, Q, IV_DEFAULT_SIZE
+        from old.crypto.Const import B, H, Q, IV_DEFAULT_SIZE
         import struct
 
         # Get required params
@@ -277,7 +277,7 @@ def decrypt_sym_key(enc_key=None, pk_file=None, sk_file=None, debug=0):
     with(open(temp_enc_sym_key_file, 'wb')) as fout:
         fout.write(enc_key)
 
-    from crypto.ABEPrimitives import decrypt
+    from re_enc_engine.abe_primitives import decrypt
 
     # Decrypt encrypted symmetric key file with ABE using given public and secret keys
     decrypt(dec_outfile=temp_dec_sym_key_file, pk_file=pk_file, sk_file=sk_file, ciphertext_file=temp_enc_sym_key_file,
@@ -388,7 +388,7 @@ def remove_aont_enc(ciphertext_infile=None, plaintext_outfile=None, n=AONT_DEFAU
             # Decrease remaining ciphertext length
             ciphertext_length -= (n - k0) // 8
 
-            from crypto.SymEncPrimitives import sym_decrypt
+            from old.crypto.SymEncPrimitives import sym_decrypt
 
             # Decrypt chunk
             dec_plaintext_chunk = sym_decrypt(key=sym_key, iv=iv, ciphertext=ciphertext_chunk, debug=debug)
@@ -472,7 +472,7 @@ def remove_aont(data=None, n=None, k0=None, encoding=None, ciphertext_length=Non
         if debug:  # ONLY USE FOR DEBUG
             print('TO_ANTI_TRANSFORM = (%d) %s' % (len(to_anti_transform), to_anti_transform))
 
-        from crypto.OAEPbis import init, unpad
+        from old.crypto.OAEPbis import init, unpad
 
         # Initialise anti-transformation parameters
         init(n=n, k0=k0, enc=encoding)

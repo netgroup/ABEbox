@@ -34,7 +34,7 @@ class Abebox(Passthrough):
         self.CHUNK_SIZE = 1024
         self.RANDOM_SIZE = 32
 
-        #load abe keys
+        # Load ABE keys
         self._load_abe_keys(str(Path.home()) + '/.abe_keys')
 
         super(Abebox, self).__init__(root)
@@ -104,8 +104,8 @@ class Abebox(Passthrough):
 
         # decrypt the group element with ABE
         print("decrypt")
-        print("pk: ", self.abe_pk)
-        print("sk: ", self.abe_sk)
+        print("pk: ", next(iter(self.abe_pk.values())))
+        print("sk: ", next(iter(self.abe_sk.values())))
         print("policy: ", enc_el['policy'])
 
         el = self.cpabe.decrypt(next(iter(self.abe_pk.values())), enc_el, next(iter(self.abe_sk.values())))
@@ -119,7 +119,6 @@ class Abebox(Passthrough):
             'chunk_size': enc_meta['chunk_size'],
             'random_size': enc_meta['random_size'],
             're_encs': enc_meta['re_encs']
-            # 'original_data_length': enc_meta['original_data_length']
         }
 
         # print('IN _LOAD_META:', self.meta['original_data_length'])
@@ -135,7 +134,6 @@ class Abebox(Passthrough):
         """
         print("dumping metadata on file ", metafile)
         # we need to handle separately enc_el (charm.toolbox.node.BinNode) as there is no serializer
-        print('\n\n\nTO ENC = (%s) %s' % (type(self.meta['el']), self.meta['el']))
         enc_el = self.cpabe.encrypt(next(iter(self.abe_pk.values())), self.meta['el'], self.meta['policy'])
         policy = enc_el.pop('policy')
 
@@ -149,7 +147,6 @@ class Abebox(Passthrough):
             'chunk_size': self.meta['chunk_size'],
             'random_size': self.meta['random_size'],
             're_encs': self.meta['re_encs']
-            # 'original_data_length': self.meta['original_data_length']
         }
         with open(metafile, 'w') as f:
             json.dump(enc_meta, f)
@@ -180,12 +177,16 @@ class Abebox(Passthrough):
                 re_enc_op = self.meta['re_encs'][re_enc_ops_num - 1 - i]
                 key_pair_label = re_enc_op['pk']
                 pk = self.abe_pk[key_pair_label]
-                sk = self.abe_pk[key_pair_label]
+                sk = self.abe_sk[key_pair_label]
                 re_enc_args = {
                     'pk': pk,
                     'sk': sk,
-                    'enc_params': re_enc_op['enc_params'],
-                    'iv': re_enc_op['iv']
+                    'enc_seed': re_enc_op['enc_seed'],
+                    'enc_key': re_enc_op['enc_key'],
+                    're_enc_length': re_enc_op['re_enc_length'],
+                    'iv': re_enc_op['iv'],
+                    'policy': re_enc_op['policy'],
+                    'pairing_group': self.pairing_group
                 }
                 chunk = re_enc.re_decrypt(data=chunk, args=re_enc_args, debug=0)
                 print("DE-RE-ENCRYPTED CHUNK = (%d) %s" % (len(chunk), chunk))
@@ -196,8 +197,7 @@ class Abebox(Passthrough):
         print("Remove AONT from encrypted file chunk")
         aont_args = {
             'nBits': len(chunk) * 8,
-            'k0BitsInt': self.meta['random_size'] * 8,
-            # 'original_data_length': original_data_len
+            'k0BitsInt': self.meta['random_size'] * 8
         }
         chunk = aont.anti_transform(data=chunk, args=aont_args, debug=0)
         print("ANTI-TRANSFORMED CHUNK = (%d) %s" % (len(chunk), chunk))
@@ -247,7 +247,8 @@ class Abebox(Passthrough):
                 for prev_chunk_num in range(chunk_num + 1):
                     if str(prev_chunk_num) not in self.file_read_chunks.keys():
                         self.file_read_chunks[str(prev_chunk_num)] = 0
-                        print('Adding chunk #%d to the already read list with value %d' % (prev_chunk_num, self.file_read_chunks[str(prev_chunk_num)]))
+                        print('Adding chunk #%d to the already read list with value %d'
+                              % (prev_chunk_num, self.file_read_chunks[str(prev_chunk_num)]))
             # Check if chunk has already been processed
             if not self.file_read_chunks[str(chunk_num)]:
                 print('Chunk #%d needs to be processed' % chunk_num)
@@ -270,7 +271,7 @@ class Abebox(Passthrough):
         print('BUFF =', buf)
         print('BUFF LEN =', len(buf))
 
-        # Compute offset and last byte to read in transformed encrypted file TODO CORRETTO??? SOPRATTUTTO LAST_BYTE
+        # Compute offset and last byte to read in transformed encrypted file
         transf_offset = offset + (math.floor(offset / self.meta['chunk_size']) * self.meta['random_size'])
         transf_last_byte = offset + len(buf) + (math.floor((offset + len(buf)) / self.meta['chunk_size']) * self.meta['random_size'])
 
@@ -291,7 +292,8 @@ class Abebox(Passthrough):
                 for prev_chunk_num in range(chunk_num + 1):
                     if str(prev_chunk_num) not in self.file_written_chunks.keys():
                         self.file_written_chunks[str(prev_chunk_num)] = 1
-                        print('Adding chunk #%d to the already written list with value %d' % (prev_chunk_num, self.file_written_chunks[str(prev_chunk_num)]))
+                        print('Adding chunk #%d to the already written list with value %d'
+                              % (prev_chunk_num, self.file_written_chunks[str(prev_chunk_num)]))
             # Check if chunk has already been processed
             elif not self.file_written_chunks[str(chunk_num)]:
                 print('Chunk #%d needs to be processed' % chunk_num)
@@ -314,22 +316,24 @@ class Abebox(Passthrough):
 
         self._load_meta(self.dirname + '/.abebox/' + self.filename)
 
-        # original_data_len = self.meta['original_data_length']
         print('loaded meta')
 
         # Open a temporary file with given size
         self.temp_fp = tempfile.NamedTemporaryFile()  # could be more secure with mkstemp()
-        print('PATH = %s\nSIZE = %d' % (self._full_path(path), os.path.getsize(self._full_path(path))))
-        self.temp_fp.seek(os.path.getsize(self._full_path(path)) - 1)
+        # Compute temporary file size
+        file_size = os.path.getsize(self._full_path(path))
+        temp_file_size = file_size - (math.ceil(file_size / self.meta['chunk_size']) * self.meta['random_size'])
+        print('PATH = %s\nSIZE = %d' % (self._full_path(path), temp_file_size))
+        self.temp_fp.seek(temp_file_size - 1)
         self.temp_fp.write(b'\0')
-        # self.temp_fp.seek(0)
         print("Created tempfile: ", self.temp_fp.name)
+        print('Wrote \\0 in position #', self.temp_fp.tell() - 1)
 
         # open real file
         full_path = self._full_path(path)
 
         # enc_fp = os.open(full_path, flags)
-        self.enc_fp.close()
+        # self.enc_fp.close()
         self.enc_fp = open(full_path, 'rb+')
 
         # Create two arrays: the first one to track already read file chunks; the second for modified ones
@@ -338,36 +342,11 @@ class Abebox(Passthrough):
         self.file_written_chunks = {str(i): 0 for i in
                                     range(math.ceil(os.path.getsize(self._full_path(path)) / self.meta['chunk_size']))}
 
-        # print('FILE =', self._full_path(path))
-        # print('FILE SIZE =', os.path.getsize(self._full_path(path)))
-        # print('CHUNK SIZE =', self.CHUNK_SIZE)
-        # print('CHUNK # =', math.ceil(os.path.getsize(self._full_path(path)) / self.CHUNK_SIZE))
-        # print('READ ARRAY =', self.file_read_chunks)
-        # print('WRITE ARRAY =', self.file_written_chunks)
-
-        # #decrypt the file with the sym key and write it on the temporary file
-        # sym_cipher = AES.new(self.meta['sym_key'][:16], AES.MODE_CTR, nonce=self.meta['nonce'])
-        # #with open(self._full_path(path), 'rb') as enc_fp:
-        # for chunk in self._read_in_chunks(enc_fp, self.CHUNK_SIZE):
-        #     print("Remove AONT from encrypted data chunk")
-        #     aont_args = {
-        #         'nBits': self.CHUNK_SIZE,
-        #         'k0BitsInt': 256,
-        #         'original_data_length': original_data_len
-        #     }
-        #     chunk, original_data_len = aont.anti_transform(data=chunk, args=aont_args)
-        #     print("AONT successfully removed")
-        #     x = sym_cipher.decrypt(chunk)
-        #     print("got chunk in open: ", x)
-        #     self.temp_fp.write(x)
-        #     #self.temp_fp.write(sym_cipher.decrypt(chunk))
-
         # Reset file pointers
         self.enc_fp.seek(0)  # TODO PROBABILMENTE NON SERVE
         self.temp_fp.seek(0)
         #os.lseek(enc_fp, 0, 0)
         return self.enc_fp.fileno()
-
         #return self.temp_fp.fileno()
         #return super(Abebox, self).open(path, flags)
 
@@ -379,8 +358,6 @@ class Abebox(Passthrough):
 
         # Open a temporary file with given size
         self.temp_fp = tempfile.NamedTemporaryFile()  # could be more secure with mkstemp()
-        # self.temp_fp.seek(os.path.getsize(self._full_path(path)) - 1)
-        # self.temp_fp.write(b'\0')
         print("Created tempfile: ", self.temp_fp.name)
 
         self.dirname, self.filename = os.path.split(self._full_path(path))
@@ -428,8 +405,6 @@ class Abebox(Passthrough):
         print("Temporary file has size : ", self.temp_fp.seek(0, os.SEEK_END))
         # self.temp_fp.seek(0)
 
-        # original_data_length = 0
-
         # Write only modified file chunks
         # for chunk in self._read_in_chunks(self.temp_fp, self.CHUNK_SIZE):
         for chunk_num in self.file_written_chunks.keys():
@@ -443,6 +418,7 @@ class Abebox(Passthrough):
                 self.temp_fp.seek(int(chunk_num) * self.meta['chunk_size'])
                 # Read a file chunk from temporary file
                 chunk = self.temp_fp.read(self.meta['chunk_size'] - self.meta['random_size'])
+                # TODO in swp file: chunk = b'' PERCHé?
                 print('in release, read %d bytes = %s' % (len(chunk), chunk))
                 # Encrypt file chunk
                 enc_chunk = sym_cipher.encrypt(chunk)
@@ -455,20 +431,23 @@ class Abebox(Passthrough):
                 }
                 transf_enc_chunk = aont.transform(data=enc_chunk, args=aont_args, debug=0)
                 print("AONT successfully applied")
-
-                # TODO RE-APPLY PREVIOUS RE-ENCs
+                # Re-apply re-encryptions
                 re_enc_transf_enc_chunk = transf_enc_chunk
                 print("Re-applying re-encryptions to file chunk")
                 if len(self.meta['re_encs']) > 0:
                     for re_enc_op in self.meta['re_encs']:
                         key_pair_label = re_enc_op['pk']
                         pk = self.abe_pk[key_pair_label]
-                        sk = self.abe_pk[key_pair_label]
+                        sk = self.abe_sk[key_pair_label]
                         re_enc_args = {
                             'pk': pk,
                             'sk': sk,
-                            'enc_params': re_enc_op['enc_params'],
-                            'iv': re_enc_op['iv']
+                            'enc_seed': re_enc_op['enc_seed'],
+                            'enc_key': re_enc_op['enc_key'],
+                            're_enc_length': re_enc_op['re_enc_length'],
+                            'iv': re_enc_op['iv'],
+                            'policy': re_enc_op['policy'],
+                            'pairing_group': self.pairing_group
                         }
                         re_enc_transf_enc_chunk = re_enc.re_encrypt(data=re_enc_transf_enc_chunk, args=re_enc_args,
                                                                     debug=0)
@@ -492,10 +471,7 @@ class Abebox(Passthrough):
         #    fh.close()
         print("Closed")
 
-        # self.meta['original_data_length'] = original_data_length
-        # print('IN RELEASE:', self.meta['original_data_length'])
-
-        meta_directory = self.dirname + '/.abebox/' 
+        meta_directory = self.dirname + '/.abebox/'
         if not os.path.exists(meta_directory):
             os.makedirs(meta_directory)
         print("dumping meta on :", meta_directory + self.filename)

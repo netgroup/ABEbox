@@ -5,12 +5,14 @@ Rotation" (https://eprint.iacr.org/2017/833.pdf).
 """
 # TODO AGGIORNARE DOCUMENTAZIONE, CONTROLLI VARIABILI, COMMENTI; RIMUOVE FUNZIONI NON UTILIZZATE -> RICONTROLLARE TUTTO!
 
-from charm.toolbox.pairinggroup import PairingGroup
-from charm.core.engine.util import bytesToObject
 from ABE.ac17 import AC17CPABE
+from charm.toolbox.pairinggroup import GT, PairingGroup, ZR
+from charm.core.engine.util import bytesToObject, objectToBytes
+
+import logging
 
 
-def re_encrypt(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pk=None, policy=None, debug=0):
+def re_encrypt(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pairing_group=None, pk=None, policy=None, debug=0):
     """ TODO AGGIORNARE DOCUMENTAZIONE E CONTROLLI VARIABILI
     Re-encrypt the ciphertext using the punctured encryption with new keys.
     :param ciphertext_infile: input file for re-encryption
@@ -51,26 +53,35 @@ def re_encrypt(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pk=N
         re_enc_length = RE_ENC_LENGTH
 
     # Re-encrypt the given number of bytes and get re-encryption parameters
-    seed, k, iv, re_enc_length = re_enc_ciphertext_bytes(ciphertext_infile, chunk_size, re_enc_length, debug)
+    seed, k, iv, re_enc_length = re_enc_ciphertext_bytes(ciphertext_infile, chunk_size, re_enc_length, pairing_group, debug)
+
+    enc_seed = abe_encrypt(seed, pairing_group, pk, policy, debug)
+    enc_key = abe_encrypt(k, pairing_group, pk, policy, debug)
+    # enc_re_enc_length = abe_encrypt(re_enc_length, pairing_group, pk, policy, debug)
 
     if debug:  # ONLY USE FOR DEBUG
-        print('SEED = (%d) %s' % (len(seed), seed))
-        print('KEY = (%d) %s' % (len(k), k))
+        if seed is not None:
+            print('SEED = (%d) %s' % (len(objectToBytes(seed, pairing_group)), objectToBytes(seed, pairing_group)))
+            print('ENC SEED = (%s) %s' % (type(enc_seed), enc_seed))
+        else:
+            print('SEED =', seed)
+            print('ENC SEED =', seed)
+        print('KEY = (%d) %s' % (len(objectToBytes(k, pairing_group)), objectToBytes(k, pairing_group)))
+        print('ENC KEY = (%s) %s' % (type(enc_key), enc_key))
         print('IV = (%d) %s' % (len(iv), iv))
-        print('RE-ENCRYPTION LENGTH = %d' % re_enc_length)
-
-    import struct
-
-    # Create a struct for seed, key and re-enc length to encrypt
-    data = struct.pack('%ds%dsH' % (SEED_LENGTH, SYM_KEY_DEFAULT_SIZE), seed, k, re_enc_length)
+        # print('RE-ENCRYPTION LENGTH = (%d) %s' % (len(objectToBytes(re_enc_length, pairing_group)), objectToBytes(re_enc_length, pairing_group)))
+        # print('ENC RE-ENCRYPTION LENGTH = (%s) %s' % (type(enc_re_enc_length), enc_re_enc_length))
 
     # Encrypt seed, key and number of re-encrypted bytes using ABE with given public key and policy
-    enc_data = encrypt_seed_key_len(data=data, pk=pk, policy=policy, debug=debug)
+    enc_seed = objectToBytes(enc_seed, pairing_group) if seed is not None \
+        else None
+    enc_k = objectToBytes(enc_key, pairing_group)
+    # enc_re_enc_length = objectToBytes(enc_re_enc_length, pairing_group)
 
-    return enc_data, iv
+    return enc_seed, enc_k, re_enc_length, iv
 
 
-def re_enc_ciphertext_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, debug=0):
+def re_enc_ciphertext_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pairing_group=None, debug=0):
     """ TODO AGGIORNARE DOCUMENTAZIONE E CONTROLLI VARIABILI
     Re-encrypt the given number of bytes in the ciphertext file.
     :param ciphertext_infile: input file for re-encryption
@@ -96,10 +107,10 @@ def re_enc_ciphertext_bytes(ciphertext_infile=None, chunk_size=None, re_enc_leng
         re_enc_length = RE_ENC_LENGTH
 
     # Apply punctured encryption and return re-encryption parameters
-    return apply_punctured_enc(ciphertext_infile, chunk_size, re_enc_length, debug)
+    return apply_punctured_enc(ciphertext_infile, chunk_size, re_enc_length, pairing_group, debug)
 
 
-def apply_punctured_enc(ciphertext_infile=None, chunk_size=None, re_enc_length=None, debug=0):
+def apply_punctured_enc(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pairing_group=None, debug=0):
     """ TODO AGGIORNARE DOCUMENTAZIONE E CONTROLLI VARIABILI
     Apply punctured encryption to the transformed ciphertext in the given input file.
     :param ciphertext_infile: file where transformed ciphertext is stored
@@ -149,17 +160,17 @@ def apply_punctured_enc(ciphertext_infile=None, chunk_size=None, re_enc_length=N
         print('RE_ENC_LENGTH = %d' % re_enc_length)
 
     # Re-encrypt the given number of bytes in the ciphertext and get re-encryption parameters
-    seed, k, iv = re_enc_bytes(ciphertext_infile, chunk_size, re_enc_length, debug)
+    seed, k, iv = re_enc_bytes(ciphertext_infile, chunk_size, re_enc_length, pairing_group, debug)
 
     if debug:  # ONLY USE FOR DEBUG
-        print('SEED = (%d) %s' % (len(seed), seed))
-        print('KEY = (%d) %s' % (len(k), k))
-        print('IV = (%d) %s' % (len(iv), iv))
+        print('SEED =', seed)
+        print('KEY =', k)
+        print('IV =', iv)
 
     return seed, k, iv, re_enc_length
 
 
-def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, debug=0):
+def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pairing_group=None, debug=0):
     """ TODO AGGIORNARE DOCUMENTAZIONE E CONTROLLI VARIABILI
     Re-encrypt the given number of bytes in the transformed ciphertext in the input file
     :param ciphertext_infile: file where transformed ciphertext is stored
@@ -187,17 +198,17 @@ def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, de
             print('EXCEPTION in re_enc_bytes ciphertext_offset')
         raise Exception
 
-    from re_enc_engine.const import IV_DEFAULT_SIZE, SEED_LENGTH
-    from re_enc_engine.sym_enc_primitives import sym_key_gen, generate_iv
+    from const import IV_DEFAULT_SIZE, SEED_LENGTH
+    from sym_enc_primitives import generate_iv
 
     # Create the re-encryption symmetric key
-    k = sym_key_gen(sym_key_size=SEED_LENGTH, debug=debug)
+    k, k_pg_elem = sym_key_gen(pairing_group, SEED_LENGTH, debug)
 
     # Create the IV for symmetric re-encryption
     iv = generate_iv(IV_DEFAULT_SIZE, debug)
 
     # Define variables
-    seed = None
+    seed_pg_elem = None
 
     from binascii import hexlify
 
@@ -208,10 +219,8 @@ def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, de
     # Check if number of bytes to re-encrypt is greater than transformed ciphertext length
     if re_enc_length < chunk_size:  # Apply punctured encryption
 
-        from re_enc_engine.function_utils import generate_random_string
-
         # Generate a pseudorandom seed
-        seed = generate_random_string(length=SEED_LENGTH, debug=debug)
+        seed, seed_pg_elem = random_string_gen(pairing_group, SEED_LENGTH, debug)
 
         with open(ciphertext_infile, 'rb+') as f:
 
@@ -279,7 +288,7 @@ def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, de
                 f.seek(-len(re_enc_file_chunk), 1)
                 f.write(re_enc_file_chunk)
 
-    return seed, k, iv
+    return seed_pg_elem, k_pg_elem, iv
 
 
 def get_bytes_to_re_enc(data=None, re_enc_length=None, seed=None, debug=0):
@@ -438,7 +447,7 @@ def replace_re_enc_bytes(data=None, re_encr_bytes=None, re_enc_indexes=None, deb
     return bytes(data)
 
 
-def encrypt_seed_key_len(data=None, pk=None, policy=None, debug=0):
+def abe_encrypt(data=None, pairing_group=None, pk=None, policy=None, debug=0):
     """
     Encrypt data using ABE scheme with the given public key and policy
     :param data: the content to encrypt
@@ -471,18 +480,18 @@ def encrypt_seed_key_len(data=None, pk=None, policy=None, debug=0):
             print('EXCEPTION in encrypt_seed_key_len policy')
         raise Exception
 
-    print('DATA = (%s) (%d) %s' % (type(data), len(data), data))
-    print('PK = (%s) (%d) %s' % (type(pk), len(pk), pk))
+    print('DATA = (%s) %s' % (type(data), data))
+    print('PK = (%s) %s' % (type(pk), pk))
     print('POLICY = (%s) %s' % (type(policy), policy))
 
     # Encrypt data with ABE
-    pairing_group = PairingGroup('MNT224')
     cpabe = AC17CPABE(pairing_group, 2)
-    enc_data = cpabe.encrypt(pk, pairing_group.deserialize(data, True), policy)
+    enc_data = cpabe.encrypt(pk, data, policy)
+    print('ENC DATA WITH POLICY = (%d) %s' % (len(enc_data), enc_data))
     enc_data.pop('policy')
 
     if debug:  # ONLY USE FOR DEBUG
-        print('ENCRYPTED SEED, KEY, RE-ENC LEN = (%d) %s' % (len(enc_data), enc_data))
+        print('ENCRYPTED DATA = (%d) %s' % (len(enc_data), enc_data))
 
     return enc_data
 
@@ -696,3 +705,79 @@ def remove_re_enc(re_enc_data=None, seed=None, k=None, re_enc_length=None, iv=No
         re_dec_data = replace_re_enc_bytes(re_enc_data, dec_ciphertext, re_enc_indexes, debug)
 
     return re_dec_data
+
+
+def sym_key_gen(pairing_group=None, sym_key_size=None, debug=0):
+    """
+        Generate a random symmetric key with given size.
+        :param sym_key_size: length in bytes of the symmetric key
+        :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+        :return: the randomly generated symmetric key
+        """
+
+    from const import SYM_KEY_MIN_SIZE, SYM_KEY_DEFAULT_SIZE
+    from function_utils import clamp
+
+    # If sym_key_size is not defined, set a default value
+    if sym_key_size is None:
+        sym_key_size = SYM_KEY_DEFAULT_SIZE
+
+    import sys
+
+    # Clamp the size between SYM_KEY_MIN_SIZE and the system maximum possible value
+    size = clamp(sym_key_size, SYM_KEY_MIN_SIZE, sys.maxsize)
+
+    # Check if an error occurred during clamping
+    if size is None:
+        logging.error('sym_key_gen clamp size exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in sym_key_gen clamp size')
+        raise Exception
+
+    import math
+
+    # Check if size is a power of 2
+    if not math.log2(size).is_integer():
+        logging.error('sym_key_gen size exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in sym_key_gen size')
+        raise Exception
+
+    rand_pg_elem = random_pairing_group_elem_gen(pairing_group, debug)
+    key = objectToBytes(rand_pg_elem, pairing_group)[: sym_key_size]
+
+    # Generate and return a random symmetric key with the given size
+    return key, rand_pg_elem
+
+
+def random_string_gen(pairing_group=None, length=None, debug=0):
+    """
+            Generate a random symmetric key with given size.
+            :param sym_key_size: length in bytes of the symmetric key
+            :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+            :return: the randomly generated symmetric key
+            """
+
+    from const import SEED_LENGTH
+
+    # If sym_key_size is not defined, set a default value
+    if length is None:
+        length = SEED_LENGTH
+
+    rand_pg_elem = random_pairing_group_elem_gen(pairing_group, debug)
+    rand_str = objectToBytes(rand_pg_elem, pairing_group)[: length]
+
+    # Generate and return a random symmetric key with the given size
+    return rand_str, rand_pg_elem
+
+
+def random_pairing_group_elem_gen(pairing_group=None, debug=0):
+    """
+    Generate a random byte string with the given length.
+    :param length: length in bytes of the string to generate
+    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+    :return: the random bytes string
+    """
+
+    # Return a random string with the given length
+    return pairing_group.random(GT)

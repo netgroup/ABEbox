@@ -5,7 +5,7 @@ encryption scheme (particularly, ABE).
 """
 
 from binascii import hexlify
-from charm.core.engine.util import bytesToObject, objectToBytes
+from charm.core.engine.util import bytesToObject
 from charm.toolbox.pairinggroup import PairingGroup
 from re_enc_engine.re_enc_primitives2 import re_encrypt
 
@@ -17,7 +17,8 @@ import re_enc_engine.const as const
 import sys
 
 
-def apply_re_encryption(enc_file=None, metadata_enc_file=None, re_enc_length=None, pk=None, policy=None, debug=0):
+# TODO UPDATE DOCUMENTATION AND VAR CONTROLS
+def apply_re_encryption(enc_file=None, metadata_enc_file=None, re_enc_length=None, pk=None, policy=None, pairing_group=None, debug=0):
     """
     Apply re-encryption to the encrypted ciphertext.
     :param enc_file: encrypted file to re-encrypt
@@ -72,15 +73,23 @@ def apply_re_encryption(enc_file=None, metadata_enc_file=None, re_enc_length=Non
         chunk_size = metadata[const.CHUNK_SIZE]
 
         # Re-encrypt the given ciphertext file
-        enc_params, iv = re_encrypt(enc_file, chunk_size, re_enc_length, bytesToObject(pk, PairingGroup('MNT224')), policy, debug)
+        enc_seed, enc_key, re_enc_len, iv = re_encrypt(enc_file, chunk_size, re_enc_length, pairing_group, bytesToObject(pk, pairing_group), policy, debug)
+
+        print('ENC SEED = (%d) %s' % (len(enc_seed), enc_seed))
+        print('ENC KEY = (%d) %s' % (len(enc_key), enc_key))
+        print('RE-ENC LEN =', re_enc_len)
 
         # Add re-encryption informations to metadata file
         metadata['re_encs'].append({
             'pk': hashlib.sha256(pk).hexdigest(),  # SHA256 of public key as hex
-            'enc_params': hexlify(objectToBytes(enc_params, PairingGroup('MNT224'))),
-            'iv': hexlify(iv)
+            'enc_seed': hexlify(enc_seed).decode() if enc_seed is not None else enc_seed,
+            'enc_key': hexlify(enc_key).decode(),
+            're_enc_length': re_enc_len,
+            'iv': hexlify(iv).decode(),
+            'policy': policy
         })
 
+        print('METADATA[RE-ENCS] =', metadata['re_encs'])
         print('METADATA =', metadata)
 
         f.seek(0)
@@ -97,6 +106,7 @@ if __name__ == '__main__':
     pub_key = bytes.fromhex(data[next(iter(data.keys()))]['pk'])
     pol = '(DEPT1 and TEAM1)'
     print('POLICY =', pol)
+    pairing_group = PairingGroup('MNT224')
 
-    apply_re_encryption(file, metadata_file, int(re_enc_len), pub_key, pol, 1)
+    apply_re_encryption(file, metadata_file, int(re_enc_len), pub_key, pol, pairing_group, 1)
 

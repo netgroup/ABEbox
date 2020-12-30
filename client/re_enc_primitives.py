@@ -7,15 +7,13 @@ Rotation" (https://eprint.iacr.org/2017/833.pdf).
 
 from ABE.ac17 import AC17CPABE
 from binascii import hexlify, unhexlify
-from charm.toolbox.pairinggroup import PairingGroup
-from charm.core.engine.util import bytesToObject
+from charm.core.engine.util import bytesToObject, objectToBytes
+from charm.toolbox.policytree import PolicyParser
 from const import SEED_LENGTH, SYM_KEY_DEFAULT_SIZE
 from sym_enc_primitives import sym_decrypt, sym_encrypt
 
 import logging
-import os.path
 import random   # [WARNING] NOT CRYPTOGRAPHICALLY SECURE
-import struct
 
 
 def re_encrypt(data=None, args=None, debug=0):
@@ -44,24 +42,33 @@ def re_encrypt(data=None, args=None, debug=0):
         raise Exception
 
     # Required re-encryption parameters
-    re_enc_params = ['pk_file', 'sk_file', 'enc_params', 'iv']
+    re_enc_params = ['pk', 'sk', 'enc_seed', 'enc_key', 're_enc_length', 'iv', 'policy', 'pairing_group']
 
     for param in re_enc_params:
-        if param not in args.keys:
+        if param not in args.keys():
             logging.error('re_encrypt ciphertext_infile exception')
             if debug:  # ONLY USE FOR DEBUG
                 print('EXCEPTION in re_encrypt ciphertext_infile')
             raise Exception
 
+    print('HEX ENC PARAMS = (%d) %s' % (len(args[re_enc_params[2]]), args[re_enc_params[2]]))
+    print('UNHEX ENC PARAMS = (%d) %s' % (len(unhexlify(args[re_enc_params[2]])), unhexlify(args[re_enc_params[2]])))
+
     # Extracting re-encryption params
     pk = args[re_enc_params[0]]
     sk = args[re_enc_params[1]]
-    enc_params = bytesToObject(unhexlify(args[re_enc_params[2]]), PairingGroup('MNT224'))
-    iv = unhexlify(args[re_enc_params[3]])
+    pairing_group = args[re_enc_params[7]]
+    enc_seed = bytesToObject(unhexlify(args[re_enc_params[2]]), pairing_group) if args[re_enc_params[2]] is not None \
+        else None
+    enc_key = bytesToObject(unhexlify(args[re_enc_params[3]]), pairing_group)
+    re_enc_length = args[re_enc_params[4]]
+    iv = unhexlify(args[re_enc_params[5]])
+    policy = PolicyParser().parse(args[re_enc_params[6]])
 
     if debug:  # ONLY USE FOR DEBUG
-        print('RE-APPLING RE-ENC:\nDATA = (%d) %s\nPK FILE = %s\nSK FILE = %s\nENC PARAMS = (%d) %s\n'
-              'IV = (%d) %s' % (len(data), data, pk, sk, len(enc_params), enc_params, len(iv), iv))
+        print('RE-APPLING RE-ENC:\nDATA = (%d) %s\nPK FILE = %s\nSK FILE = %s\nENC SEED = (%d) %s\nENC KEY = (%d) %s\n'
+              'RE-ENC LENGTH = %d\nIV = (%d) %s'
+              % (len(data), data, pk, sk, len(enc_seed), enc_seed, len(enc_key), enc_key, re_enc_length, len(iv), iv))
 
     # Check if parameters are set
     if pk is None:
@@ -76,7 +83,19 @@ def re_encrypt(data=None, args=None, debug=0):
             print('EXCEPTION in re_encrypt ciphertext_infile')
         raise Exception
 
-    if enc_params is None:
+    if enc_seed is None:
+        logging.error('re_encrypt ciphertext_infile exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in re_encrypt ciphertext_infile')
+        raise Exception
+
+    if enc_key is None:
+        logging.error('re_encrypt ciphertext_infile exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in re_encrypt ciphertext_infile')
+        raise Exception
+
+    if re_enc_length is None:
         logging.error('re_encrypt ciphertext_infile exception')
         if debug:  # ONLY USE FOR DEBUG
             print('EXCEPTION in re_encrypt ciphertext_infile')
@@ -89,7 +108,22 @@ def re_encrypt(data=None, args=None, debug=0):
         raise Exception
 
     # Decrypt seed, key and re_enc_length with ABE using given public and secret keys
-    seed, key, re_enc_length = decrypt_seed_key_len(enc_params, pk, sk, debug)
+    seed = None
+    if enc_seed is not None:
+        enc_seed['policy'] = policy
+        seed = abe_decrypt(enc_seed, pk, sk, pairing_group, debug)
+    enc_key['policy'] = policy
+    key = abe_decrypt(bytesToObject(enc_key, pairing_group), pk, sk, pairing_group, debug)
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('SEED = (%d) %s' % (len(seed), seed))
+        print('KEY = (%d) %s' % (len(key), key))
+        print('SEED = (%d) %s' % (len(re_enc_length), re_enc_length))
+
+    # Convert seed, key and re_enc_length from pairing group elements to useful values
+    seed = objectToBytes(seed, pairing_group)[: SEED_LENGTH] if seed is not None else None
+    key = objectToBytes(key, pairing_group)[: SYM_KEY_DEFAULT_SIZE]
+    re_enc_length = int(re_enc_length)
 
     # Re-encrypt the given number of bytes and get re-encryption parameters
     return re_enc_bytes(data, seed, key, iv, re_enc_length, debug)
@@ -119,24 +153,33 @@ def re_decrypt(data=None, args=None, debug=0):
         raise Exception
 
     # Required re-encryption parameters
-    re_enc_params = ['pk_file', 'sk_file', 'enc_params', 'iv']
+    re_enc_params = ['pk', 'sk', 'enc_seed', 'enc_key', 're_enc_length', 'iv', 'policy', 'pairing_group']
 
     for param in re_enc_params:
-        if param not in args.keys:
+        if param not in args.keys():
             logging.error('re_encrypt ciphertext_infile exception')
             if debug:  # ONLY USE FOR DEBUG
                 print('EXCEPTION in re_encrypt ciphertext_infile')
             raise Exception
 
+    print('HEX ENC PARAMS = (%d) %s' % (len(args[re_enc_params[2]]), args[re_enc_params[2]]))
+    print('UNHEX ENC PARAMS = (%d) %s' % (len(unhexlify(args[re_enc_params[2]])), unhexlify(args[re_enc_params[2]])))
+
     # Extracting re-encryption params
     pk = args[re_enc_params[0]]
     sk = args[re_enc_params[1]]
-    enc_params = unhexlify(args[re_enc_params[2]])
-    iv = unhexlify(args[re_enc_params[3]])
+    pairing_group = args[re_enc_params[7]]
+    enc_seed = bytesToObject(unhexlify(args[re_enc_params[2]]), pairing_group) if args[re_enc_params[2]] is not None \
+        else None
+    enc_key = bytesToObject(unhexlify(args[re_enc_params[3]]), pairing_group)
+    re_enc_length = args[re_enc_params[4]]
+    iv = unhexlify(args[re_enc_params[5]])
+    policy = PolicyParser().parse(args[re_enc_params[6]])
 
     if debug:  # ONLY USE FOR DEBUG
-        print('RE-APPLING RE-ENC:\nDATA = (%d) %s\nPK FILE = %s\nSK FILE = %s\nENC PARAMS = (%d) %s\n'
-              'IV = (%d) %s' % (len(data), data, pk, sk, len(enc_params), enc_params, len(iv), iv))
+        print('RE-APPLING RE-ENC:\nDATA = (%d) %s\nPK FILE = %s\nSK FILE = %s\nENC SEED = (%d) %s\nENC KEY = (%d) %s\n'
+              'RE-ENC LENGTH = %d\nIV = (%d) %s'
+              % (len(data), data, pk, sk, len(enc_seed), enc_seed, len(enc_key), enc_key, re_enc_length, len(iv), iv))
 
     # Check if parameters are set
     if pk is None:
@@ -145,13 +188,25 @@ def re_decrypt(data=None, args=None, debug=0):
             print('EXCEPTION in re_encrypt ciphertext_infile')
         raise Exception
 
-    if sk is None or not os.path.isfile(sk):
+    if sk is None:
         logging.error('re_encrypt ciphertext_infile exception')
         if debug:  # ONLY USE FOR DEBUG
             print('EXCEPTION in re_encrypt ciphertext_infile')
         raise Exception
 
-    if enc_params is None:
+    if enc_seed is None:
+        logging.error('re_encrypt ciphertext_infile exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in re_encrypt ciphertext_infile')
+        raise Exception
+
+    if enc_key is None:
+        logging.error('re_encrypt ciphertext_infile exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in re_encrypt ciphertext_infile')
+        raise Exception
+
+    if re_enc_length is None:
         logging.error('re_encrypt ciphertext_infile exception')
         if debug:  # ONLY USE FOR DEBUG
             print('EXCEPTION in re_encrypt ciphertext_infile')
@@ -164,10 +219,24 @@ def re_decrypt(data=None, args=None, debug=0):
         raise Exception
 
     # Decrypt seed, key and re_enc_length with ABE using given public and secret keys
-    seed, key, re_enc_length = decrypt_seed_key_len(enc_params, pk, sk, debug)
+    seed = None
+    if enc_seed is not None:
+        enc_seed['policy'] = policy
+        seed = abe_decrypt(enc_seed, pk, sk, pairing_group, debug)
+    enc_key['policy'] = policy
+    key = abe_decrypt(enc_key, pk, sk, pairing_group, debug)
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('SEED = (%s) %s' % (type(seed), seed))
+        print('KEY = (%s) %s' % (type(key), key))
+        print('RE-ENC LENGTH = (%s) %s' % (type(re_enc_length), re_enc_length))
+
+    # Convert seed, key and re_enc_length from pairing group elements to useful values
+    seed = objectToBytes(seed, pairing_group)[: SEED_LENGTH] if seed is not None else None
+    key = objectToBytes(key, pairing_group)[: SYM_KEY_DEFAULT_SIZE]
 
     # Remove re-encryption from the ciphertext
-    return remove_re_enc(data, seed, key, iv, re_enc_length, debug)
+    return remove_re_enc(data, seed, key, re_enc_length, iv, debug)
 
 
 def re_enc_bytes(data=None, seed=None, key=None, iv=None, re_enc_length=None, debug=0):
@@ -235,6 +304,8 @@ def get_bytes_to_re_enc(data=None, re_enc_length=None, seed=None, debug=0):
 
     if debug:  # ONLY USE FOR DEBUG
         print('RE-ENCRYPTION SEED = (%d) %s' % (len(seed), seed))
+        print('RE-ENC LEN = (%s) %s' % (type(re_enc_length), re_enc_length))
+        print('DATASET = (%s) %s' % (type(range(len(data))), range(len(data))))
 
     # Generate a pseudorandom set of indexes to re-encrypt
     re_enc_indexes = ind(seed, re_enc_length, range(len(data)))
@@ -255,10 +326,10 @@ def get_bytes_to_re_enc(data=None, re_enc_length=None, seed=None, debug=0):
     for index in re_enc_indexes:
 
         if debug:  # ONLY USE FOR DEBUG
-            print('BYTE TO RE-ENCRYPT =', data[index])
+            print('BYTE TO RE-ENCRYPT #', index, '=', data[index:index + 1])
 
         # Append the hexadecimal representation of the byte to a string
-        bytes_to_re_enc += data[index]
+        bytes_to_re_enc += data[index:index + 1]
 
     if debug:  # ONLY USE FOR DEBUG
         print('BYTES TO RE-ENC = (%d) %s' % (len(bytes_to_re_enc), bytes_to_re_enc))
@@ -334,6 +405,8 @@ def replace_re_enc_bytes(data=None, re_encr_bytes=None, re_enc_indexes=None, deb
             print('EXCEPTION in replace_re_enc_bytes re_enc_indexes')
         raise Exception
 
+    data = bytearray(data)
+
     # Overwrite bytes in the specified file
     for i in range(len(re_enc_indexes)):
 
@@ -341,12 +414,14 @@ def replace_re_enc_bytes(data=None, re_encr_bytes=None, re_enc_indexes=None, deb
             print('#%d: REPLACING BYTE IN POSITION %d WITH BYTE %s' % (i, re_enc_indexes[i], re_encr_bytes[i:i+1]))
 
         # Overwrite byte with re-encrypted one
-        data[re_enc_indexes[i]] = re_encr_bytes[i:i+1]
+        data[re_enc_indexes[i]:re_enc_indexes[i]+1] = re_encr_bytes[i:i+1]
 
-    return data
+    print('REPLACED BYTES DATA = (%s) (%d) %s' % (type(data), len(data), data))
+
+    return bytes(data)
 
 
-def decrypt_seed_key_len(enc_seed_key_len=None, pk=None, sk=None, debug=0):
+def abe_decrypt(enc_data=None, pk=None, sk=None, pairing_group=None, debug=0):
     """
     Decrypt encrypted seed, symmetric key and re-encryption length with ABE using the given public and secret key.
     :param enc_seed_key_len: encrypted seed, symmetric key and re-encryption length to decrypt
@@ -356,8 +431,8 @@ def decrypt_seed_key_len(enc_seed_key_len=None, pk=None, sk=None, debug=0):
     :return: decrypted seed, symmetric key and number of re-encryption length
     """
 
-    # Check if enc_seed_key is set
-    if enc_seed_key_len is None:
+    # Check if enc_data is set
+    if enc_data is None:
         logging.error('decrypt_seed_key ciphertext exception')
         if debug:  # ONLY USE FOR DEBUG
             print('EXCEPTION in decrypt_seed_key ciphertext')
@@ -378,19 +453,12 @@ def decrypt_seed_key_len(enc_seed_key_len=None, pk=None, sk=None, debug=0):
         raise Exception
 
     # Decrypt data with ABE
-    pairing_group = PairingGroup('MNT224')
     cpabe = AC17CPABE(pairing_group, 2)
-    enc_data = cpabe.decrypt(pk, pairing_group.serialize(enc_seed_key_len), sk)
+    data = cpabe.decrypt(pk, enc_data, sk)
 
-    # Retrieve params from decryption output file
-    seed, key, re_enc_length = struct.unpack('%ds%dsH' % (SEED_LENGTH, SYM_KEY_DEFAULT_SIZE), enc_data)
+    print('DEC DATA =', data)
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('DECRYPTED SEED = (%d) %s' % (len(seed), seed))
-        print('DECRYPTED KEY = (%d) %s' % (len(key), key))
-        print('DECRYPTED RE_ENC_LENGTH = %d' % re_enc_length)
-
-    return seed, key, re_enc_length
+    return data
 
 
 def remove_re_enc(re_enc_data=None, seed=None, k=None, re_enc_length=None, iv=None, debug=0):
@@ -445,8 +513,6 @@ def remove_re_enc(re_enc_data=None, seed=None, k=None, re_enc_length=None, iv=No
 
         if debug:  # ONLY USE FOR DEBUG
             print('SEED = (%d) %s' % (len(seed), seed))
-            print('RE-ENCRYPTED BYTES TO DECRYPT = (%d) %s' % (len(bytes_to_re_enc), bytes_to_re_enc))
-            print('RE-ENCRYPTED INDEXES TO DECRYPT = (%d) %s' % (len(re_enc_indexes), re_enc_indexes))
 
         # Decrypt re-encrypted transformed ciphertext bytes
         dec_ciphertext = sym_decrypt(k, iv, bytes_to_re_enc, debug)

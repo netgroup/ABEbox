@@ -27,12 +27,16 @@ logging.basicConfig()
 logger = logging.getLogger('fuse')
 logger.info("started")
 
+# TODO INTERCETTARE GETATTR E MODIFICARE FILE SIZE
+
+
 
 class Abebox(Passthrough):
 
-    def __init__(self, root):
-        self.CHUNK_SIZE = 1024
-        self.RANDOM_SIZE = 32
+    def __init__(self, root, chunk_size=128, random_size=32):
+
+        self.chunk_size = chunk_size
+        self.random_size = random_size
 
         # Load ABE keys
         self._load_abe_keys(str(Path.home()) + '/.abe_keys')
@@ -41,7 +45,7 @@ class Abebox(Passthrough):
 
     # Utility functions
 
-    def _read_in_chunks(self, file_object, chunk_size=1024):
+    def _read_in_chunks(self, file_object, chunk_size=128):
         """Lazy function (generator) to read a file piece by piece.
         Default chunk size: 1k."""
         while True:
@@ -76,8 +80,8 @@ class Abebox(Passthrough):
             'sym_key': extractor(el),
             'nonce': secrets.token_bytes(8),
             'policy': '(DEPT1 and TEAM1)',  # hardcoded - TBD
-            'chunk_size': self.CHUNK_SIZE,
-            'random_size': self.RANDOM_SIZE,
+            'chunk_size': self.chunk_size,
+            'random_size': self.random_size,
             're_encs': []
         }
 
@@ -215,29 +219,57 @@ class Abebox(Passthrough):
         self.temp_fp.seek(0)
 
 
-    # Fuse callbacks
-
-    def read(self, path, length, offset, fh):
-
-        # self.enc_fp.close()
-        # self.enc_fp = open(self._full_path(path), 'rb')
-        real_len = min(offset + length, os.path.getsize(self._full_path(path)))
+    def _get_aont_chunks_range(self, length, offset):
 
         # Compute offset and last byte to read in transformed encrypted file TODO CORRETTO???
-        transf_offset = offset + (math.floor(offset / self.meta['chunk_size']) * self.meta['random_size'])
-        transf_last_byte = real_len + (math.floor(real_len / self.meta['chunk_size']) * self.meta['random_size'])
+        transf_offset = offset + (math.floor(offset / (self.meta['chunk_size'] - self.meta['random_size']))
+                                  * self.meta['random_size'])
+        transf_last_byte = length + (math.floor(length / (self.meta['chunk_size'] - self.meta['random_size']))
+                                     * self.meta['random_size']) - 1
 
         # Compute file chunks involved in reading process
         starting_aont_chunk_num = math.floor(transf_offset / self.meta['chunk_size'])
         ending_aont_chunk_num = math.floor(transf_last_byte / self.meta['chunk_size'])
 
-        print('OFFSET =', offset)
-        print('LENGTH =', length)
-        print('REAL LENGTH =', real_len)
+        print('REAL LENGTH =', length)
         print('TRANSF OFFSET =', offset)
         print('TRANSF LAST BYTE =', transf_last_byte)
         print('STARTING AONT CHUNK NUM =', starting_aont_chunk_num)
         print('ENDING AONT CHUNK NUM =', ending_aont_chunk_num)
+
+        return starting_aont_chunk_num, ending_aont_chunk_num
+
+
+    # Fuse callbacks
+
+    def getattr(self, path, fh=None):
+        print('abebox getattr', path)
+
+        full_path = self._full_path(path)
+
+        st = os.lstat(full_path)
+        d = dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
+                 'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
+
+        if d['st_size'] > 0:
+            d['st_size'] = d['st_size'] - (math.ceil(d['st_size'] / (self.chunk_size - self.random_size)) *
+                                           self.random_size)
+        #     print('DICT =', d)
+        return d
+
+
+    def read(self, path, length, offset, fh):
+
+        # self.enc_fp.close()
+        # self.enc_fp = open(self._full_path(path), 'rb')
+
+        print('OFFSET =', offset)
+        print('LENGTH =', length)
+
+        real_len = min(offset + length, os.path.getsize(self._full_path(path)))
+
+        # Compute file chunks involved in reading process
+        starting_aont_chunk_num, ending_aont_chunk_num = self._get_aont_chunks_range(real_len, offset)
 
         # Check if those chunks have already been processed
         for chunk_num in range(starting_aont_chunk_num, ending_aont_chunk_num + 1):
@@ -271,18 +303,8 @@ class Abebox(Passthrough):
         print('BUFF =', buf)
         print('BUFF LEN =', len(buf))
 
-        # Compute offset and last byte to read in transformed encrypted file
-        transf_offset = offset + (math.floor(offset / self.meta['chunk_size']) * self.meta['random_size'])
-        transf_last_byte = offset + len(buf) + (math.floor((offset + len(buf)) / self.meta['chunk_size']) * self.meta['random_size'])
-
         # Compute file chunks involved in reading process
-        starting_aont_chunk_num = math.floor(transf_offset / self.meta['chunk_size'])
-        ending_aont_chunk_num = math.floor(transf_last_byte / self.meta['chunk_size'])
-
-        print('TRANSF OFFSET =', transf_offset)
-        print('TRANSF LAST BYTE =', transf_last_byte)
-        print('STARTING CHUNK # =', starting_aont_chunk_num)
-        print('ENDING CHUNK # =', ending_aont_chunk_num)
+        starting_aont_chunk_num, ending_aont_chunk_num = self._get_aont_chunks_range(offset + len(buf), offset)
 
         # Check if those chunks have already been processed
         for chunk_num in range(starting_aont_chunk_num, ending_aont_chunk_num + 1):
@@ -418,6 +440,7 @@ class Abebox(Passthrough):
                 self.temp_fp.seek(int(chunk_num) * self.meta['chunk_size'])
                 # Read a file chunk from temporary file
                 chunk = self.temp_fp.read(self.meta['chunk_size'] - self.meta['random_size'])
+
                 # TODO in swp file: chunk = b'' PERCHé?
                 print('in release, read %d bytes = %s' % (len(chunk), chunk))
                 # Encrypt file chunk
@@ -433,8 +456,8 @@ class Abebox(Passthrough):
                 print("AONT successfully applied")
                 # Re-apply re-encryptions
                 re_enc_transf_enc_chunk = transf_enc_chunk
-                print("Re-applying re-encryptions to file chunk")
                 if len(self.meta['re_encs']) > 0:
+                    print("Re-applying re-encryptions to file chunk")
                     for re_enc_op in self.meta['re_encs']:
                         key_pair_label = re_enc_op['pk']
                         pk = self.abe_pk[key_pair_label]
@@ -455,6 +478,8 @@ class Abebox(Passthrough):
                         print("Re-encryption successfully re-applied")
                     print("Re-encryptions successfully re-applied")
 
+                print('WRITING FH =', fh)
+                print('CHUNK =', re_enc_transf_enc_chunk)
                 # Write transformed encrypted chunk
                 os.write(fh, re_enc_transf_enc_chunk)
                 print("chunk (%d) %s has been written on file %d" % (len(re_enc_transf_enc_chunk), re_enc_transf_enc_chunk, fh))
@@ -511,4 +536,4 @@ def main(mountpoint, root):
 if __name__ == '__main__':
     if len(sys.argv) != 3:
         print("Syntax: " + sys.argv[0] + " basedir mountdir")
-    main(sys.argv[2], sys.argv[1])
+    main(sys.argv[2], sys.argv[1])  # Optionally, you can pass chunk and random bytes sizes (defaults are respectively 128 and 32)

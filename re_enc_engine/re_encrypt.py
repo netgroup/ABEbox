@@ -98,6 +98,10 @@ def apply_re_encryption(enc_file=None, metadata_enc_file=None, re_enc_length=Non
 
 if __name__ == '__main__':
 
+    if len(sys.argv) != 6:
+        print("Syntax: " + sys.argv[0] + " [FILE TO RE-ENCRYPT] [METADATA FILE TO SAVE RE-ENCRYPTION INFOS] "
+                                         "[RE-ENC LEN IN BYTES] [PUB KEY FILE] [POLICY]")
+
     script, file, metadata_file, re_enc_len, pub_key_file, pol = sys.argv
 
     with open(pub_key_file, 'r') as f:

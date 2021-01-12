@@ -42,15 +42,20 @@ def transform(data=None, args=None, debug=0):
         raise Exception
 
     if debug:  # ONLY USE FOR DEBUG
-        print('[AONT] DATA = (%d) %s -> %s' % (len(data), data, hexlify(data)))
+        print('[AONT] DATA = (%d) %s' % (len(data), data))
+
+    # Initialise AONT parameters
+    init(args=args)
 
     # Apply All-Or-Nothing Transformation to data
-    transf_data = apply_aont(data=data, args=args, debug=debug)
+    transformed_data = pad(hexlify(data).decode(encoding), debug)
 
     if debug:  # ONLY USE FOR DEBUG
-        print('[AONT] TRANSFORMED DATA = (%d) %s -> %s' % (len(transf_data), transf_data, hexlify(transf_data)))
+        print('TRANSFORMED DATA BITS = (%s) (%d) %s' % (type(transformed_data), len(transformed_data),
+                                                        transformed_data))
 
-    return transf_data
+    # Convert transformation result from character binary string to bytes and fill it with leading zeros
+    return unhexlify(hex(int(transformed_data, 2))[2:].zfill(len(transformed_data) // 4))
 
 
 def anti_transform(data=None, args=None, debug=0):
@@ -70,93 +75,21 @@ def anti_transform(data=None, args=None, debug=0):
         raise Exception
 
     if debug:  # ONLY USE FOR DEBUG
-        print('[AONT] DATA = (%d) %s -> %s' % (len(data), data, hexlify(data)))
+        print('[AONT] DATA = (%d) %s' % (len(data), data))
+
+    # Initialise AONT parameters
+    init(args=args)
 
     # Remove All-Or-Nothing Transformation from data chunk
-    anti_transf_data = remove_aont(data=data, args=args, debug=debug)
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('[AONT] ANTI-TRANSFORMED DATA = (%d) %s -> %s' % (len(anti_transf_data), anti_transf_data,
-                                                                hexlify(anti_transf_data)))
-
-    return anti_transf_data
-
-
-def apply_aont(data=None, args=None, debug=0):
-    """
-    Apply All-Or-Nothing Transformation to the given data
-    :param data: data to transform
-    :param args: AONT configuration parameters
-    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
-    :return a string containing transformed data bytes
-    """
-
-    # Check if data is set
-    if data is None:
-        logging.error('[AONT] in apply_aont: data exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('[AONT] in apply_aont: data exception')
-        raise Exception
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('DATA BYTES = (%d) %s' % (len(data), data))
-
-    # Initialise AONT parameters
-    init(args=args)
-
-    # Apply transformation to data
-    transformed_data = pad(hexlify(data).decode(encoding), debug)
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('TRANSFORMED DATA BITS = (%s) (%d) %s' % (type(transformed_data), len(transformed_data),
-                                                        transformed_data))
-
-    # Convert transformation result from character binary string to bytes and fill it with leading zeros
-    transformed_data_bytes = unhexlify(hex(int(transformed_data, 2))[2:].zfill(len(transformed_data) // 4))
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('TRANSFORMED DATA BYTES = (%d) %s' % (len(transformed_data_bytes), transformed_data_bytes))
-
-    return transformed_data_bytes
-
-
-def remove_aont(data=None, args=None, debug=0):
-    """
-    Remove All-Or-Nothing Transformation from the given data
-    :param data: data to transform
-    :param args: AONT configuration parameters
-    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
-    :return a string containing anti-transformed data
-    """
-
-    # Check if data is set
-    if data is None:
-        logging.error('[AONT] in remove_aont: data exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('[AONT] in remove_aont: data exception')
-        raise Exception
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('DATA BYTES = (%d) %s' % (len(data), data))
-
-    # Initialise AONT parameters
-    init(args=args)
-
-    # Remove transformation to data
     anti_transformed_data = unpad(bin(int(hexlify(data).decode(), 16))[2:].zfill(nBits), debug)
 
     if debug:  # ONLY USE FOR DEBUG
-        print('ANTI-TRANSFORMED DATA BITS = (%s) (%d) %s' % (type(anti_transformed_data), len(anti_transformed_data),
-                                                             anti_transformed_data))
+        print(
+            'ANTI-TRANSFORMED DATA BITS = (%s) (%d) %s' % (type(anti_transformed_data), len(anti_transformed_data),
+                                                           anti_transformed_data))
 
     # Convert anti-transformation result from character string to bytes
-    anti_transformed_data_bytes = unhexlify(hex(int(anti_transformed_data, 2))[2:]
-                                            .zfill(len(anti_transformed_data) // 4))
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('ANTI-TRANSFORMED DATA BYTES = (%d) %s' % (len(anti_transformed_data_bytes), anti_transformed_data_bytes))
-
-    return anti_transformed_data_bytes
+    return unhexlify(hex(int(anti_transformed_data, 2))[2:].zfill(len(anti_transformed_data) // 4))
 
 
 # ============================================== OAEP scheme primitives ============================================== #
@@ -234,7 +167,7 @@ def pad(msg, debug=0):
                                                                                             byteorder=endian)
 
     if debug:  # ONLY USE FOR DEBUG
-        print('RAND BIT STRING = (%d) %s' % (len(rand_bytes), rand_bytes))
+        print('RANDOM BYTES = (%d) %s' % (len(rand_bytes), rand_bytes))
 
     # Convert msg string to a binary string
     bin_msg = hex_to_binary(msg, debug)
@@ -273,6 +206,7 @@ def pad(msg, debug=0):
 
     # Compute X as zero_padded_msg XOR G(r)
     x = format(int(bin_msg, 2) ^ int.from_bytes(g_r, byteorder=endian), n_k0BitsFill)
+    # x = format(int(bin_msg, 2), n_k0BitsFill)
 
     if debug:  # ONLY USE FOR DEBUG
         print('X = (%d) %s' % (len(x), x))
@@ -293,6 +227,7 @@ def pad(msg, debug=0):
     if debug:  # ONLY USE FOR DEBUG
         print('Y = (%d) %s' % (len(y), y))
 
+    # y = '1' * 256
     return x + y
 
 
@@ -328,7 +263,7 @@ def unpad(msg, debug=0):
 
     if debug:  # ONLY USE FOR DEBUG
         print('EXTRACTED RANDOM BITS STRING = (%d) %s' % (len(r_bits_string), r_bits_string))
-        print('EXTRACTED RANDOM = (%d) %s' % (len(r), r))
+        print('EXTRACTED RANDOM BYTES = (%d) %s' % (len(r), r))
 
     # Using recovered random as seed for prng, generate random strings until their concatenation has a length
     # equal to zero_padded_msg's one (expansion of r, G(r))
@@ -364,6 +299,7 @@ def unpad(msg, debug=0):
 
     # Recover original message as X XOR G(r)
     msg = format(int(x, 2) ^ int.from_bytes(g_r, byteorder=endian), n_k0BitsFill)
+    # msg = format(int(x, 2), n_k0BitsFill)
 
     if debug:  # ONLY USE FOR DEBUG
         print('EXTRACTED MSG = (%d) %s' % (len(msg), msg))

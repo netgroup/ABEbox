@@ -1,4 +1,5 @@
 pyOpenSSL
+python-ldap
 fusepy
 secrets
 pycryptodome

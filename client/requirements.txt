@@ -1,3 +1,4 @@
+pyOpenSSL
 fusepy
 secrets
 pycryptodome

@@ -341,10 +341,10 @@ class Abebox(Passthrough):
         starting_aont_chunk_num, ending_aont_chunk_num = self._get_aont_chunks_range(real_len, offset)
 
         # Variable offset during file decoding
-        decode_offset = offset
+        # decode_offset = offset
 
         # Create symmetric cipher
-        sym_cipher = AES.new(self.meta['sym_key'][:16], AES.MODE_CTR, nonce=self.meta['nonce'])
+        # sym_cipher = AES.new(self.meta['sym_key'][:16], AES.MODE_CTR, nonce=self.meta['nonce'])
 
         # Check if those chunks have already been processed
         for chunk_num in range(starting_aont_chunk_num, ending_aont_chunk_num + 1):
@@ -359,15 +359,21 @@ class Abebox(Passthrough):
             # Check if chunk has already been processed
             if not self.file_read_chunks[str(chunk_num)]:
                 print('Chunk #%d needs to be processed' % chunk_num)
-                # Create symmetric cipher
-                # sym_cipher = AES.new(self.meta['sym_key'][:16], AES.MODE_CTR, initial_value=chunk_num,
-                #                      nonce=self.meta['nonce'])
+                # Compute offset on decoded file
+                decoded_offset = self._get_decoded_offset(chunk_num)
+                print('DECODED OFFSET =', decoded_offset)
+                # Compute initial value of cipher block counter
+                init_val = self._get_cipher_initial_value(decoded_offset)
+                print('INITIAL VALUE =', init_val)
+                # Create symmetric cipher with proper initial value
+                sym_cipher = AES.new(self.meta['sym_key'][:16], AES.MODE_CTR, initial_value=init_val,
+                                     nonce=self.meta['nonce'])
                 # Anti-transform and decrypt chunk
-                self._decode(full_path, chunk_num, decode_offset, sym_cipher)
+                self._decode(full_path, chunk_num, decoded_offset, sym_cipher)
                 # Set relative array chunk position as read
                 self.file_read_chunks[str(chunk_num)] = 1
                 # Update reading offset
-                decode_offset = decode_offset + self.meta['chunk_size'] - self.meta['random_size']
+                # decode_offset = decode_offset + self.meta['chunk_size'] - self.meta['random_size']
 
         print("reading ", length, " bytes on tmp fs ", self.temp_fp)
         return super(Abebox, self).read(path, length, offset, self.temp_fp.fileno())

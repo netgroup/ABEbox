@@ -51,119 +51,7 @@ def re_encrypt(data=None, args=None, debug=0):
                 print('EXCEPTION in re_encrypt ciphertext_infile')
             raise Exception
 
-    print('HEX ENC PARAMS = (%d) %s' % (len(args[re_enc_params[2]]), args[re_enc_params[2]]))
-    print('UNHEX ENC PARAMS = (%d) %s' % (len(unhexlify(args[re_enc_params[2]])), unhexlify(args[re_enc_params[2]])))
-
-    # Extracting re-encryption params
-    pk = args[re_enc_params[0]]
-    sk = args[re_enc_params[1]]
-    pairing_group = args[re_enc_params[7]]
-    enc_seed = bytesToObject(unhexlify(args[re_enc_params[2]]), pairing_group) if args[re_enc_params[2]] is not None \
-        else None
-    enc_key = bytesToObject(unhexlify(args[re_enc_params[3]]), pairing_group)
-    re_enc_length = args[re_enc_params[4]]
-    iv = unhexlify(args[re_enc_params[5]])
-    policy = PolicyParser().parse(args[re_enc_params[6]])
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('RE-APPLING RE-ENC:\nDATA = (%d) %s\nPK FILE = %s\nSK FILE = %s\nENC SEED = (%d) %s\nENC KEY = (%d) %s\n'
-              'RE-ENC LENGTH = %d\nIV = (%d) %s'
-              % (len(data), data, pk, sk, len(enc_seed), enc_seed, len(enc_key), enc_key, re_enc_length, len(iv), iv))
-
-    # Check if parameters are set
-    if pk is None:
-        logging.error('re_encrypt ciphertext_infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_encrypt ciphertext_infile')
-        raise Exception
-
-    if sk is None:
-        logging.error('re_encrypt ciphertext_infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_encrypt ciphertext_infile')
-        raise Exception
-
-    if enc_seed is None:
-        logging.error('re_encrypt ciphertext_infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_encrypt ciphertext_infile')
-        raise Exception
-
-    if enc_key is None:
-        logging.error('re_encrypt ciphertext_infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_encrypt ciphertext_infile')
-        raise Exception
-
-    if re_enc_length is None:
-        logging.error('re_encrypt ciphertext_infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_encrypt ciphertext_infile')
-        raise Exception
-
-    if iv is None:
-        logging.error('re_encrypt ciphertext_infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_encrypt ciphertext_infile')
-        raise Exception
-
-    # Decrypt seed, key and re_enc_length with ABE using given public and secret keys
-    seed = None
-    if enc_seed is not None:
-        enc_seed['policy'] = policy
-        seed = abe_decrypt(enc_seed, pk, sk, pairing_group, debug)
-    enc_key['policy'] = policy
-    key = abe_decrypt(bytesToObject(enc_key, pairing_group), pk, sk, pairing_group, debug)
-
-    if debug:  # ONLY USE FOR DEBUG
-        print('SEED = (%d) %s' % (len(seed), seed))
-        print('KEY = (%d) %s' % (len(key), key))
-        print('SEED = (%d) %s' % (len(re_enc_length), re_enc_length))
-
-    # Convert seed, key and re_enc_length from pairing group elements to useful values
-    seed = objectToBytes(seed, pairing_group)[: SEED_LENGTH] if seed is not None else None
-    key = objectToBytes(key, pairing_group)[: SYM_KEY_DEFAULT_SIZE]
-    re_enc_length = int(re_enc_length)
-
-    # Re-encrypt the given number of bytes and get re-encryption parameters
-    return re_enc_bytes(data, seed, key, iv, re_enc_length, debug)
-
-
-def re_decrypt(data=None, args=None, debug=0):
-    """
-    Remove the last re-encryption applied to the given ciphertext file.
-    :param ciphertext_infile: ciphertext file to decrypt
-    :param pk_file: ABE public key
-    :param sk_file: ABE secret key
-    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
-    """
-
-    # Check if data is set
-    if data is None:
-        logging.error('re_decrypt data exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_decrypt data')
-        raise Exception
-
-    # Check if args is set and it contains some values
-    if args is None or len(args) == 0:
-        logging.error('re_decrypt pk_file exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_decrypt pk_file')
-        raise Exception
-
-    # Required re-encryption parameters
-    re_enc_params = ['pk', 'sk', 'enc_seed', 'enc_key', 're_enc_length', 'iv', 'policy', 'pairing_group']
-
-    for param in re_enc_params:
-        if param not in args.keys():
-            logging.error('re_encrypt ciphertext_infile exception')
-            if debug:  # ONLY USE FOR DEBUG
-                print('EXCEPTION in re_encrypt ciphertext_infile')
-            raise Exception
-
-    print('HEX ENC PARAMS = (%d) %s' % (len(args[re_enc_params[2]]), args[re_enc_params[2]]))
-    print('UNHEX ENC PARAMS = (%d) %s' % (len(unhexlify(args[re_enc_params[2]])), unhexlify(args[re_enc_params[2]])))
+    print('ARGS =', args)
 
     # Extracting re-encryption params
     pk = args[re_enc_params[0]]
@@ -227,9 +115,119 @@ def re_decrypt(data=None, args=None, debug=0):
     key = abe_decrypt(enc_key, pk, sk, pairing_group, debug)
 
     if debug:  # ONLY USE FOR DEBUG
-        print('SEED = (%s) %s' % (type(seed), seed))
-        print('KEY = (%s) %s' % (type(key), key))
-        print('RE-ENC LENGTH = (%s) %s' % (type(re_enc_length), re_enc_length))
+        print('SEED =', seed)
+        print('KEY =', key)
+        print('RE-ENC LENGTH =', re_enc_length)
+
+    # Convert seed, key and re_enc_length from pairing group elements to useful values
+    seed = objectToBytes(seed, pairing_group)[: SEED_LENGTH] if seed is not None else None
+    key = objectToBytes(key, pairing_group)[: SYM_KEY_DEFAULT_SIZE]
+    re_enc_length = int(re_enc_length)
+
+    # Re-encrypt the given number of bytes and get re-encryption parameters
+    return re_enc_bytes(data, seed, key, iv, re_enc_length, debug)
+
+
+def re_decrypt(data=None, args=None, debug=0):
+    """
+    Remove the last re-encryption applied to the given ciphertext file.
+    :param ciphertext_infile: ciphertext file to decrypt
+    :param pk_file: ABE public key
+    :param sk_file: ABE secret key
+    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+    """
+
+    # Check if data is set
+    if data is None:
+        logging.error('re_decrypt data exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in re_decrypt data')
+        raise Exception
+
+    # Check if args is set and it contains some values
+    if args is None or len(args) == 0:
+        logging.error('re_decrypt pk_file exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in re_decrypt pk_file')
+        raise Exception
+
+    # Required re-encryption parameters
+    re_enc_params = ['pk', 'sk', 'enc_seed', 'enc_key', 're_enc_length', 'iv', 'policy', 'pairing_group']
+
+    for param in re_enc_params:
+        if param not in args.keys():
+            logging.error('re_encrypt ciphertext_infile exception')
+            if debug:  # ONLY USE FOR DEBUG
+                print('EXCEPTION in re_encrypt ciphertext_infile')
+            raise Exception
+
+    print('ARGS =', args)
+
+    # Extracting re-encryption params
+    pk = args[re_enc_params[0]]
+    sk = args[re_enc_params[1]]
+    pairing_group = args[re_enc_params[7]]
+    enc_seed = bytesToObject(unhexlify(args[re_enc_params[2]]), pairing_group) if args[re_enc_params[2]] is not None \
+        else None
+    enc_key = bytesToObject(unhexlify(args[re_enc_params[3]]), pairing_group)
+    re_enc_length = args[re_enc_params[4]]
+    iv = unhexlify(args[re_enc_params[5]])
+    policy = PolicyParser().parse(args[re_enc_params[6]])
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('RE-APPLING RE-ENC:\nDATA = (%d) %s\nPK FILE = %s\nSK FILE = %s\nENC SEED = (%d) %s\nENC KEY = (%d) %s\n'
+              'RE-ENC LENGTH = %d\nIV = (%d) %s'
+              % (len(data), data, pk, sk, len(enc_seed), enc_seed, len(enc_key), enc_key, re_enc_length, len(iv), iv))
+
+    # Check if parameters are set
+    if pk is None:
+        logging.error('re_encrypt ciphertext_infile exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in re_encrypt ciphertext_infile')
+        raise Exception
+
+    if sk is None:
+        logging.error('re_encrypt ciphertext_infile exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in re_encrypt ciphertext_infile')
+        raise Exception
+
+    if enc_seed is None:
+        logging.error('re_encrypt ciphertext_infile exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in re_encrypt ciphertext_infile')
+        raise Exception
+
+    if enc_key is None:
+        logging.error('re_encrypt ciphertext_infile exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in re_encrypt ciphertext_infile')
+        raise Exception
+
+    if re_enc_length is None:
+        logging.error('re_encrypt ciphertext_infile exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in re_encrypt ciphertext_infile')
+        raise Exception
+
+    if iv is None:
+        logging.error('re_encrypt ciphertext_infile exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in re_encrypt ciphertext_infile')
+        raise Exception
+
+    # Decrypt seed, key and re_enc_length with ABE using given public and secret keys
+    seed = None
+    if enc_seed is not None:
+        enc_seed['policy'] = policy
+        seed = abe_decrypt(enc_seed, pk, sk, pairing_group, debug)
+    enc_key['policy'] = policy
+    key = abe_decrypt(enc_key, pk, sk, pairing_group, debug)
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('SEED =', seed)
+        print('KEY =', key)
+        print('RE-ENC LENGTH =', re_enc_length)
 
     # Convert seed, key and re_enc_length from pairing group elements to useful values
     seed = objectToBytes(seed, pairing_group)[: SEED_LENGTH] if seed is not None else None

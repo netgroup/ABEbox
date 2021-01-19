@@ -5,15 +5,28 @@ from Crypto.Cipher import AES
 import re_enc_primitives as re_enc
 import json
 
-from charm.toolbox.pairinggroup import PairingGroup, ZR
+from charm.toolbox.pairinggroup import PairingGroup, ZR, GT, G1
 from charm.core.engine.util import objectToBytes, bytesToObject
 from charm.core.math.pairing import hashPair as extractor
 from ABE.ac17 import AC17CPABE
 from charm.toolbox.policytree import PolicyParser
 
+import hashlib
 
 if __name__ == '__main__':
 
+    pairing_group = PairingGroup('MNT224')
+    el = pairing_group.random(GT)
+    #el = pairing_group.random(G1)
+    #el = pairing_group.random(GT)
+    print(type(el), el)
+    c = int.from_bytes(hashlib.sha256(str(el).encode('utf-8')).digest(), byteorder='big')
+    print(type(c), c)
+    el2 = pairing_group.init(GT, c)
+    # el = pairing_group.hash(el, G1)
+    print(type(el2), el2)
+
+    exit(0)
 
     a = {'0': 1, '1': 1, '2': 1, '3': 1, '4': 1, '5': 1, '6': 1, '7': 1, '8': 1, '9': 1, '10': 1, '11': 1, '12': 1, '13': 1, '14': 1, '15': 1, '16': 1, '17': 1, '18': 1, '19': 1, '20': 1, '21': 1, '22': 1, '23': 1, '24': 1, '25': 1, '26': 1, '27': 1, '28': 1, '29': 1, '30': 1, '31': 1, '32': 1, '33': 1, '34': 1, '35': 1, '36': 1, '37': 1, '38': 1, '39': 1, '40': 1, '41': 1, '42': 1}
 
@@ -94,6 +107,7 @@ if __name__ == '__main__':
 
             # Decrypt the anti-transformed file chunk with the sym key and write it on the temporary file
             sym_cipher = AES.new(meta['sym_key'][:16], AES.MODE_CTR, nonce=meta['nonce'])
+            sym_cipher.block_size
             x = sym_cipher.decrypt(chunk)
             print("got chunk in _decode: ", x)
 

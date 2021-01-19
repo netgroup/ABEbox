@@ -6,7 +6,7 @@ Rotation" (https://eprint.iacr.org/2017/833.pdf).
 # TODO AGGIORNARE DOCUMENTAZIONE, CONTROLLI VARIABILI, COMMENTI; RIMUOVE FUNZIONI NON UTILIZZATE -> RICONTROLLARE TUTTO!
 
 from ABE.ac17 import AC17CPABE
-from charm.toolbox.pairinggroup import GT, PairingGroup, ZR
+from charm.toolbox.pairinggroup import GT, PairingGroup
 from charm.core.engine.util import bytesToObject, objectToBytes
 
 import logging
@@ -23,7 +23,7 @@ def re_encrypt(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pair
     :return: the new ciphertext with all the parameters required for decryption
     """
 
-    from re_enc_engine.const import RE_ENC_LENGTH, SYM_KEY_DEFAULT_SIZE, SEED_LENGTH
+    from re_enc_engine.const import RE_ENC_LENGTH
     import logging
     import os.path
 
@@ -73,8 +73,7 @@ def re_encrypt(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pair
         # print('ENC RE-ENCRYPTION LENGTH = (%s) %s' % (type(enc_re_enc_length), enc_re_enc_length))
 
     # Encrypt seed, key and number of re-encrypted bytes using ABE with given public key and policy
-    enc_seed = objectToBytes(enc_seed, pairing_group) if seed is not None \
-        else None
+    enc_seed = objectToBytes(enc_seed, pairing_group) if seed is not None else None
     enc_k = objectToBytes(enc_key, pairing_group)
     # enc_re_enc_length = objectToBytes(enc_re_enc_length, pairing_group)
 

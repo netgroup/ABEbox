@@ -1,11 +1,20 @@
 # INSTALL
+sudo apt-get install libsasl2-dev python3-dev libldap2-dev libssl-dev
+pip3 install -r requirements.txt
+mkdir basedir mountdir
 
-- sudo apt-get install libsasl2-dev python3-dev libldap2-dev libssl-dev
-- install requirements pip3 install -r requirements.txt
-- mkdir basedir mountdir
+# INSTALL PBC
+sudo apt-get -y install flex bison libssl-dev python3-dev libgmp-dev
+wget http://crypto.stanford.edu/pbc/files/pbc-0.5.14.tar.gz && tar xf pbc-0.5.14.tar.gz && cd pbc-0.5.14 && ./configure && make && sudo make install
+
+# INSTALL CHARM
+sudo apt-get -y install subversion m4 python3-setuptools python3-dev libgmp-dev
+git clone https://github.com/JHUISI/charm.git && cd charm && sudo ./configure.sh && sudo make && sudo make install && sudo ldconfig
+
+# INSTALL ABE
+git clone https://github.com/sagrawal87/ABE.git && cd ABE && make && pip3 install .
 
 # LAUNCH
-
 python3 abebox.py basedir mountdir
 #python3 passthrough.py basedir mountdir
 # you can read/write files on mountdir

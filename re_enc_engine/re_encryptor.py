@@ -46,7 +46,7 @@ def apply_re_encryption(enc_file=None, re_enc_length=None, pk_file=None, policy=
             print('EXCEPTION in apply_re_encryption policy')
         raise Exception
 
-    from re_enc_engine.re_enc_primitives import re_encrypt
+    from old.re_enc_primitives import re_encrypt
 
     # Re-encrypt the given ciphertext file
     re_encrypt(enc_file, re_enc_length, pk_file, policy, debug)

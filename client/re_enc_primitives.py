@@ -5,9 +5,9 @@ Rotation" (https://eprint.iacr.org/2017/833.pdf).
 """
 # TODO AGGIORNARE DOCUMENTAZIONE, CONTROLLI VARIABILI, COMMENTI; RIMUOVE FUNZIONI NON UTILIZZATE -> RICONTROLLARE TUTTO!
 
-from ABE.ac17 import AC17CPABE
 from binascii import hexlify, unhexlify
 from charm.core.engine.util import bytesToObject, objectToBytes
+from charm.schemes.abenc.abenc_bsw07 import CPabe_BSW07
 from charm.toolbox.policytree import PolicyParser
 from const import SEED_LENGTH, SYM_KEY_DEFAULT_SIZE
 from sym_enc_primitives import sym_decrypt, sym_encrypt
@@ -109,9 +109,9 @@ def re_encrypt(data=None, args=None, debug=0):
     # Decrypt seed, key and re_enc_length with ABE using given public and secret keys
     seed = None
     if enc_seed is not None:
-        enc_seed['policy'] = policy
+        enc_seed['policy'] = str(policy)
         seed = abe_decrypt(enc_seed, pk, sk, pairing_group, debug)
-    enc_key['policy'] = policy
+    enc_key['policy'] = str(policy)
     key = abe_decrypt(enc_key, pk, sk, pairing_group, debug)
 
     if debug:  # ONLY USE FOR DEBUG
@@ -219,9 +219,9 @@ def re_decrypt(data=None, args=None, debug=0):
     # Decrypt seed, key and re_enc_length with ABE using given public and secret keys
     seed = None
     if enc_seed is not None:
-        enc_seed['policy'] = policy
+        enc_seed['policy'] = str(policy)
         seed = abe_decrypt(enc_seed, pk, sk, pairing_group, debug)
-    enc_key['policy'] = policy
+    enc_key['policy'] = str(policy)
     key = abe_decrypt(enc_key, pk, sk, pairing_group, debug)
 
     if debug:  # ONLY USE FOR DEBUG
@@ -451,8 +451,8 @@ def abe_decrypt(enc_data=None, pk=None, sk=None, pairing_group=None, debug=0):
         raise Exception
 
     # Decrypt data with ABE
-    cpabe = AC17CPABE(pairing_group, 2)
-    data = cpabe.decrypt(pk, enc_data, sk)
+    cpabe = CPabe_BSW07(pairing_group)
+    data = cpabe.decrypt(pk, sk, enc_data)
 
     print('DEC DATA =', data)
 

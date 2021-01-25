@@ -4,17 +4,13 @@ cpabe and libbswabe of John Bethencourt, Amit Sahai and Brent Waters. Full detai
 the following link http://acsc.cs.utexas.edu/cpabe/.
 """
 
-from ABE.ac17 import AC17CPABE
 from charm.core.engine.util import objectToBytes, bytesToObject
-from charm.core.math.pairing import hashPair as rpg
+from charm.schemes.abenc.abenc_bsw07 import CPabe_BSW07
 from charm.toolbox.pairinggroup import PairingGroup, GT
-
-from re_enc_engine.const import POLICY
-from re_enc_engine.const import ABE_PK_FILE, ABE_MSK_FILE, ABE_SK_FILE, PAIRING_GROUP_CURVE
+from re_enc_engine.const import ABE_PK_FILE, ABE_MSK_FILE, ABE_SK_FILE, PAIRING_GROUP_CURVE, POLICY
 
 import logging
 import os.path
-import subprocess
 
 
 def setup(pk_outfile=ABE_PK_FILE, msk_outfile=ABE_MSK_FILE, pairing_group_curve=PAIRING_GROUP_CURVE, debug=0):
@@ -26,33 +22,11 @@ def setup(pk_outfile=ABE_PK_FILE, msk_outfile=ABE_MSK_FILE, pairing_group_curve=
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     """
 
-    # # Create bash command to execute
-    # bash_command = 'cpabe-setup'
-    #
-    # if pk_outfile is not None:
-    #     bash_command += ' -p ' + pk_outfile
-    #
-    # if msk_outfile is not None:
-    #     bash_command += ' -m ' + msk_outfile
-    #
-    # logging.info('setup command = ' + bash_command)
-    #
-    # if debug:   # ONLY USE FOR DEBUG
-    #     print('setup command = ' + bash_command)
-    #
-    # # Execute command
-    # process = subprocess.Popen(bash_command, shell=True, stdout=subprocess.PIPE)
-    # output, error = process.communicate()
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('setup output = ' + str(output))
-    #     print('setup error = ' + str(error))
-
     # Instantiate a bilinear pairing map with the given curve
     pairing_group = PairingGroup(pairing_group_curve)
 
-    # CP-ABE under DLIN (2-linear)
-    cpabe = AC17CPABE(pairing_group, 2)
+    # CP-ABE
+    cpabe = CPabe_BSW07(pairing_group)
 
     # Create public and master secret keys
     (pk, msk) = cpabe.setup()
@@ -111,35 +85,11 @@ def keygen(sk_outfile=None, pk_file=ABE_PK_FILE, msk_file=ABE_MSK_FILE, pairing_
             print('EXCEPTION in keygen attr_list')
         raise Exception
 
-    # # Create bash command to execute
-    # bash_command = 'cpabe-keygen'
-    #
-    # if sk_outfile is not None:
-    #     bash_command += ' -o ' + sk_outfile
-    #
-    # bash_command += ' ' + pk_file + ' ' + msk_file
-    #
-    # for attr in attr_list:
-    #     bash_command += ' ' + attr
-    #
-    # logging.info('keygen command = ' + bash_command)
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('keygen command = ' + bash_command)
-    #
-    # # Execute command
-    # process = subprocess.Popen(bash_command, shell=True, stdout=subprocess.PIPE)
-    # output, error = process.communicate()
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('keygen output = ' + str(output))
-    #     print('keygen error = ' + str(error))
-
     # Instantiate a bilinear pairing map with the given curve
     pairing_group = PairingGroup(pairing_group_curve)
 
     # CP-ABE under DLIN (2-linear)
-    cpabe = AC17CPABE(pairing_group, 2)
+    cpabe = CPabe_BSW07(pairing_group)
 
     # Read public and master secret keys from specified files
     with open(pk_file, 'r') as fin:
@@ -184,13 +134,6 @@ def encrypt(enc_outfile=None, pk_file=ABE_PK_FILE, plaintext_file=None, plaintex
             print('EXCEPTION in encrypt pk_file')
         raise Exception
 
-    # Check if plaintext_file is set and it exists
-    # if plaintext_file is None or not os.path.isfile(plaintext_file):
-    #     logging.error('encrypt plaintext_file exception')
-    #     if debug:  # ONLY USE FOR DEBUG
-    #         print('EXCEPTION in encrypt plaintext_file')
-    #     raise Exception
-
     # Check if policy is set
     if policy is None:
         logging.error('encrypt policy exception')
@@ -198,50 +141,19 @@ def encrypt(enc_outfile=None, pk_file=ABE_PK_FILE, plaintext_file=None, plaintex
             print('EXCEPTION in encrypt policy')
         raise Exception
 
-    # # Create bash command to execute
-    # bash_command = 'cpabe-enc'
-    #
-    # if enc_outfile is not None:
-    #     bash_command += ' -o ' + enc_outfile
-    #
-    # bash_command += ' ' + pk_file + ' ' + plaintext_file + ' ' + policy
-    #
-    # logging.info('encrypt command = ' + bash_command)
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('encrypt command = ' + bash_command)
-    #
-    # # Execute command
-    # process = subprocess.Popen(bash_command, shell=True, stdout=subprocess.PIPE)
-    # output, error = process.communicate()
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('encrypt output = ' + str(output))
-    #     print('encrypt error = ' + str(error))
-
     # Instantiate a bilinear pairing map with the given curve
     pairing_group = PairingGroup(pairing_group_curve)
     print('PAIRING GROUP =', pairing_group)
 
-    # CP-ABE under DLIN (2-linear)
-    cpabe = AC17CPABE(pairing_group, 2)
+    # CP-ABE
+    cpabe = CPabe_BSW07(pairing_group)
 
     # Read public key from specified file
     with open(pk_file, 'r') as fin:
         pk_hex = fin.read()
         pk = bytesToObject(bytes.fromhex(pk_hex), pairing_group)
 
-    # Read plaintext from specified file
-    # with open(plaintext_file, 'r') as fin:
-    #     data = fin.read()
-    #     print('READ SYM KEY BYTES = (%d) %s' % (len(bytes.fromhex(data)), bytes.fromhex(data)))
-    #     plaintext = bytesToObject(bytes.fromhex(data), pairing_group)
-
     print('PLAINTEXT TO ENC =', plaintext)
-
-    # plaintext = bytesToObject(bytes.fromhex(plaintext), pairing_group)
-
-    # print('PLAINTEXT TO ENC =', plaintext)
 
     # Encrypt the plaintext with given public key and policy
     ciphertext = cpabe.encrypt(pk, plaintext, policy)
@@ -293,32 +205,11 @@ def decrypt(dec_outfile=None, pk_file=ABE_PK_FILE, sk_file=ABE_SK_FILE, cipherte
             print('EXCEPTION in decrypt ciphertext_file')
         raise Exception
 
-    # # Create bash command to execute
-    # bash_command = 'cpabe-dec'
-    #
-    # if dec_outfile is not None:
-    #     bash_command += ' -o ' + dec_outfile
-    #
-    # bash_command += ' ' + pk_file + ' ' + sk_file + ' ' + ciphertext_file
-    #
-    # logging.info('decrypt command = ' + bash_command)
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('decrypt command = ' + bash_command)
-    #
-    # # Execute command
-    # process = subprocess.Popen(bash_command, shell=True, stdout=subprocess.PIPE)
-    # output, error = process.communicate()
-    #
-    # if debug:  # ONLY USE FOR DEBUG
-    #     print('decrypt output = ' + str(output))
-    #     print('decrypt error = ' + str(error))
-
     # Instantiate a bilinear pairing map with the given curve
     pairing_group = PairingGroup(pairing_group_curve)
 
-    # CP-ABE under DLIN (2-linear)
-    cpabe = AC17CPABE(pairing_group, 2)
+    # CP-ABE
+    cpabe = CPabe_BSW07(pairing_group)
 
     # Read public and secret key from specified files
     with open(pk_file, 'r') as fin:
@@ -332,7 +223,7 @@ def decrypt(dec_outfile=None, pk_file=ABE_PK_FILE, sk_file=ABE_SK_FILE, cipherte
         ciphertext = bytesToObject(bytes.fromhex(fin.read()), pairing_group)
 
     # Decrypt the ciphertext
-    plaintext = cpabe.decrypt(pk, ciphertext, sk)
+    plaintext = cpabe.decrypt(pk, sk, ciphertext)
 
     print('CP-ABE PLAINTEXT =', plaintext)
 
@@ -359,5 +250,4 @@ def get_random_group_point(pairing_group_curve=PAIRING_GROUP_CURVE, debug=0):
     if debug:  # ONLY USE FOR DEBUG
         print('GROUP POINT =', point)
 
-    #return objectToBytes(point, pairing_group).hex()
     return point

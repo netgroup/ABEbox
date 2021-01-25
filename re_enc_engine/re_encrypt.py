@@ -7,7 +7,7 @@ encryption scheme (particularly, ABE).
 from binascii import hexlify
 from charm.core.engine.util import bytesToObject
 from charm.toolbox.pairinggroup import PairingGroup
-from re_enc_engine.re_enc_primitives2 import re_encrypt
+from re_enc_engine.re_enc_primitives import re_encrypt
 
 import hashlib
 import json

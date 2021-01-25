@@ -5,10 +5,10 @@ from Crypto.Cipher import AES
 import re_enc_primitives as re_enc
 import json
 
-from charm.toolbox.pairinggroup import PairingGroup, ZR, GT, G1
 from charm.core.engine.util import objectToBytes, bytesToObject
 from charm.core.math.pairing import hashPair as extractor
-from ABE.ac17 import AC17CPABE
+from charm.schemes.abenc.abenc_bsw07 import CPabe_BSW07
+from charm.toolbox.pairinggroup import PairingGroup, ZR, GT, G1
 from charm.toolbox.policytree import PolicyParser
 
 import hashlib
@@ -48,7 +48,8 @@ if __name__ == '__main__':
     abe_pk = {}
     abe_sk = {}
     pairing_group = PairingGroup('MNT224')
-    cpabe = AC17CPABE(pairing_group, 2)
+    # cpabe = AC17CPABE(pairing_group, 2)
+    cpabe = CPabe_BSW07(pairing_group)
     policy = '(DEPT1 and TEAM1)'
     for abe_key_pair in data.keys():
         abe_pk[abe_key_pair] = bytesToObject(bytes.fromhex(data[abe_key_pair]['pk']), pairing_group)
@@ -97,8 +98,8 @@ if __name__ == '__main__':
             print("AONT successfully removed")
 
             enc_el = bytesToObject(bytearray.fromhex(meta['enc_el']), pairing_group)
-            enc_el['policy'] = PolicyParser().parse(policy)
-            el = cpabe.decrypt(next(iter(abe_pk.values())), enc_el, next(iter(abe_sk.values())))
+            enc_el['policy'] = str(PolicyParser().parse(policy))
+            el = cpabe.decrypt(next(iter(abe_pk.values())), next(iter(abe_sk.values())), enc_el)
             meta['sym_key'] = extractor(el)
             meta['nonce'] = bytearray.fromhex(meta['nonce'])
 
@@ -107,7 +108,6 @@ if __name__ == '__main__':
 
             # Decrypt the anti-transformed file chunk with the sym key and write it on the temporary file
             sym_cipher = AES.new(meta['sym_key'][:16], AES.MODE_CTR, nonce=meta['nonce'])
-            sym_cipher.block_size
             x = sym_cipher.decrypt(chunk)
             print("got chunk in _decode: ", x)
 

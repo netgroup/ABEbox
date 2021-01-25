@@ -1,28 +1,24 @@
-import math
-import sys
-import os
-import secrets
-import tempfile
+import aont
 import json
+import logging
+import math
+import os
+import re_enc_primitives as re_enc
+import secrets
+import sys
+import tempfile
+
+from charm.core.engine.util import objectToBytes, bytesToObject
+from charm.core.math.pairing import hashPair as extractor
+from charm.toolbox.pairinggroup import PairingGroup, GT
+from charm.toolbox.policytree import PolicyParser
+from charm.schemes.abenc.abenc_bsw07 import CPabe_BSW07
+from Crypto.Cipher import AES
+from fuse import FUSE, FuseOSError, Operations
+from passthrough import Passthrough
 from pathlib import Path
 
-from Crypto.Cipher import AES
-from charm.toolbox.pairinggroup import PairingGroup, GT
-from charm.core.math.pairing import hashPair as extractor
-#from charm.toolbox.node import BinNode
-from charm.toolbox.policytree import PolicyParser
-from charm.core.engine.util import objectToBytes, bytesToObject
-from ABE.ac17 import AC17CPABE
-#from charm.toolbox.symcrypto import SymmetricCryptoAbstraction
 
-from fuse import FUSE, FuseOSError, Operations
-
-from passthrough import Passthrough
-
-import aont
-import re_enc_primitives as re_enc
-
-import logging
 logging.basicConfig()
 logger = logging.getLogger('fuse')
 logger.info("started")
@@ -65,7 +61,7 @@ class Abebox(Passthrough):
         for abe_key_pair in data.keys():
             self.abe_pk[abe_key_pair] = bytesToObject(bytes.fromhex(data[abe_key_pair]['pk']), self.pairing_group)
             self.abe_sk[abe_key_pair] = bytesToObject(bytes.fromhex(data[abe_key_pair]['sk']), self.pairing_group)
-        self.cpabe = AC17CPABE(self.pairing_group, 2)
+        self.cpabe = CPabe_BSW07(self.pairing_group)
 
     def _create_meta(self):
         """Create meta information about the file with keys
@@ -102,7 +98,8 @@ class Abebox(Passthrough):
 
         enc_el = bytesToObject(bytearray.fromhex(enc_meta['enc_el']), self.pairing_group)
         policy = PolicyParser().parse(enc_meta['policy'])
-        enc_el['policy'] = policy
+        enc_el['policy'] = str(policy)
+        print('ENC EL = (%s) %s' % (type(enc_el), enc_el))
 
         # Decrypt the group element with ABE
         print("decrypt")
@@ -110,7 +107,8 @@ class Abebox(Passthrough):
         print("sk: ", next(iter(self.abe_sk.values())))
         print("policy: ", enc_el['policy'])
 
-        el = self.cpabe.decrypt(next(iter(self.abe_pk.values())), enc_el, next(iter(self.abe_sk.values())))
+        el = self.cpabe.decrypt(next(iter(self.abe_pk.values())), next(iter(self.abe_sk.values())), enc_el)
+        print('EL = (%s) %s' % (type(el), el))
 
         # Load all in clear
         self.meta = {
@@ -133,8 +131,10 @@ class Abebox(Passthrough):
         """Dump the meta information on the meta file
         """
         print("dumping metadata on file ", metafile)
+        print('EL = (%s) %s' % (type(self.meta['el']), self.meta['el']))
         # we need to handle separately enc_el (charm.toolbox.node.BinNode) as there is no serializer
         enc_el = self.cpabe.encrypt(next(iter(self.abe_pk.values())), self.meta['el'], self.meta['policy'])
+        print('ENC EL = (%s) %s' % (type(enc_el), enc_el))
         policy = enc_el.pop('policy')
 
         # write encrypted data

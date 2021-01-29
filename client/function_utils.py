@@ -13,15 +13,15 @@ def generate_random_string(length=None, debug=0):
     """
     Generate a random byte string with the given length.
     :param length: length in bytes of the string to generate
-    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+    :param debug: if 1, # prints will be shown during execution; default 0, no # prints are shown
     :return: the random bytes string
     """
 
     # Check if length is set
     if length is None:
         logging.error('generate_random_string length exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in generate_random_string length')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in generate_random_string length')
         raise Exception
 
     import os
@@ -36,7 +36,7 @@ def clamp(value=None, lower_bound=None, upper_bound=None, debug=0):
     :param value: value to clamp
     :param lower_bound: minimum value
     :param upper_bound: maximum value
-    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+    :param debug: if 1, # prints will be shown during execution; default 0, no # prints are shown
     :return: the clamped value
     """
 
@@ -44,8 +44,8 @@ def clamp(value=None, lower_bound=None, upper_bound=None, debug=0):
     if value is None or lower_bound is None or upper_bound is None:
         return None
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('Clamping: value = %d\tlower_bound = %d\tupper_bound = %d' % (value, lower_bound, upper_bound))
+    # if debug:  # ONLY USE FOR DEBUG
+        # print('Clamping: value = %d\tlower_bound = %d\tupper_bound = %d' % (value, lower_bound, upper_bound))
 
     # Return the clamped value
     return max(lower_bound, min(value, upper_bound))
@@ -55,15 +55,15 @@ def read_bytes_from_file(infile=None, debug=0):
     """
     Read all bytes in the given file.
     :param infile: file to read
-    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+    :param debug: if 1, # prints will be shown during execution; default 0, no # prints are shown
     :return: read bytes
     """
 
     # Check if infile is set and it exists
     if infile is None or not os.path.isfile(infile):
         logging.error('read_file_bytes infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in read_file_bytes infile')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in read_file_bytes infile')
         raise Exception
 
     # Return data from the infile
@@ -77,21 +77,21 @@ def write_bytes_on_file(outfile=None, data=None, mode='wb', offset=0, debug=0):
     :param data: data to write
     :param mode: file opening mode
     :param offset: file offset
-    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+    :param debug: if 1, # prints will be shown during execution; default 0, no # prints are shown
     """
 
     # Check if outfile is set
     if outfile is None:
         logging.error('write_bytes_on_file outfile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in write_bytes_on_file outfile')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in write_bytes_on_file outfile')
         raise Exception
 
     # Check if data is set
     if data is None:
         logging.error('write_bytes_on_file data exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in write_bytes_on_file data')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in write_bytes_on_file data')
         raise Exception
 
     # Write data on the outfile
@@ -104,14 +104,14 @@ def clear_folder(folder_path=None, debug=0):
     """
     Delete data files in the specified folder generated from previous executions.
     :param folder_path: directory whose files have to be deleted
-    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+    :param debug: if 1, # prints will be shown during execution; default 0, no # prints are shown
     """
 
     # Check if folder_path is set and it exists
     if folder_path is None or not os.path.isdir(folder_path):
         logging.error('clear_folder folder_path exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in clear_folder folder_path')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in clear_folder folder_path')
         raise Exception
 
     # Get files from the directory

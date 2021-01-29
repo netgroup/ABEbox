@@ -40,8 +40,8 @@ def clamp(value=None, lower_bound=None, upper_bound=None, debug=0):
     if value is None or lower_bound is None or upper_bound is None:
         return None
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('Clamping: value = %d\tlower_bound = %d\tupper_bound = %d' % (value, lower_bound, upper_bound))
+    # if debug:  # ONLY USE FOR DEBUG
+    #     print('Clamping: value = %d\tlower_bound = %d\tupper_bound = %d' % (value, lower_bound, upper_bound))
 
     # Return the clamped value
     return max(lower_bound, min(value, upper_bound))

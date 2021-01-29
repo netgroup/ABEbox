@@ -28,14 +28,14 @@ def main():
 
     # generate a ciphertext
     #policy_str = '((PATIENT and SMART-1032702) or (PRACTITIONER and SMART-PRACTITIONER-72004454))'
-    print("---------- PK ----------")
-    print(pk)
+    # print("---------- PK ----------")
+    # print(pk)
 
-    print("---------- MSK (needed only for debug)----------")
-    print(msk)
+    # print("---------- MSK (needed only for debug)----------")
+    # print(msk)
 
-    print("---------- SK ----------")
-    print(user_key)
+    # print("---------- SK ----------")
+    # print(user_key)
 
     data = {
         hashlib.sha256(objectToBytes(pk, pairing_group)).hexdigest(): {
@@ -45,7 +45,7 @@ def main():
         }
     }
 
-    #print(json.dumps(data))
+    ## print(json.dumps(data))
 
     ######
     abe_keys_file = str(Path.home()) + '/.abe_keys'
@@ -54,9 +54,9 @@ def main():
     if answer == 'y':
         with open(abe_keys_file, 'w') as f:
             json.dump(data, f)
-        print("Done")
-    else:
-        print("Could we at least be friend?")
+        # print("Done")
+    # else:
+        # print("Could we at least be friend?")
 
 
 

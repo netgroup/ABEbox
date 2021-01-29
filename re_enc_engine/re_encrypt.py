@@ -32,36 +32,36 @@ def apply_re_encryption(enc_file=None, metadata_enc_file=None, re_enc_length=Non
     # Check if enc_file is set and it exists
     if enc_file is None or not os.path.isfile(enc_file):
         logging.error('apply_re_encryption enc_file exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in apply_re_encryption enc_file')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in apply_re_encryption enc_file')
         raise Exception
 
     # Check if metadata_enc_file is set and it exists
     if metadata_enc_file is None or not os.path.isfile(metadata_enc_file):
         logging.error('apply_re_encryption metadata_enc_file exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in apply_re_encryption metadata_enc_file')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in apply_re_encryption metadata_enc_file')
         raise Exception
 
     # Check if re_enc_length is set
     if re_enc_length is None:
         logging.error('apply_re_encryption re_enc_length exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in apply_re_encryption re_enc_length')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in apply_re_encryption re_enc_length')
         raise Exception
 
     # Check if pk_file is set
     if pk is None:
         logging.error('apply_re_encryption pk exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in apply_re_encryption pk')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in apply_re_encryption pk')
         raise Exception
 
     # Check if policy is set
     if policy is None:
         logging.error('apply_re_encryption policy exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in apply_re_encryption policy')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in apply_re_encryption policy')
         raise Exception
 
     # Read metadata
@@ -75,9 +75,9 @@ def apply_re_encryption(enc_file=None, metadata_enc_file=None, re_enc_length=Non
         # Re-encrypt the given ciphertext file
         enc_seed, enc_key, re_enc_len, iv = re_encrypt(enc_file, chunk_size, re_enc_length, pairing_group, bytesToObject(pk, pairing_group), policy, debug)
 
-        print('ENC SEED = (%d) %s' % (len(enc_seed), enc_seed))
-        print('ENC KEY = (%d) %s' % (len(enc_key), enc_key))
-        print('RE-ENC LEN =', re_enc_len)
+        # print('ENC SEED = (%d) %s' % (len(enc_seed), enc_seed))
+        # print('ENC KEY = (%d) %s' % (len(enc_key), enc_key))
+        # print('RE-ENC LEN =', re_enc_len)
 
         # Add re-encryption informations to metadata file
         metadata['re_encs'].append({
@@ -89,8 +89,8 @@ def apply_re_encryption(enc_file=None, metadata_enc_file=None, re_enc_length=Non
             'policy': policy
         })
 
-        print('METADATA[RE-ENCS] =', metadata['re_encs'])
-        print('METADATA =', metadata)
+        # print('METADATA[RE-ENCS] =', metadata['re_encs'])
+        # print('METADATA =', metadata)
 
         f.seek(0)
         json.dump(metadata, f)
@@ -98,9 +98,9 @@ def apply_re_encryption(enc_file=None, metadata_enc_file=None, re_enc_length=Non
 
 if __name__ == '__main__':
 
-    if len(sys.argv) != 6:
-        print("Syntax: " + sys.argv[0] + " [FILE TO RE-ENCRYPT] [METADATA FILE TO SAVE RE-ENCRYPTION INFOS] "
-                                         "[RE-ENC LEN IN BYTES] [PUB KEY FILE] [POLICY]")
+    # if len(sys.argv) != 6:
+        # print("Syntax: " + sys.argv[0] + " [FILE TO RE-ENCRYPT] [METADATA FILE TO SAVE RE-ENCRYPTION INFOS] "
+        #                                  "[RE-ENC LEN IN BYTES] [PUB KEY FILE] [POLICY]")
 
     script, file, metadata_file, re_enc_len, pub_key_file, pol = sys.argv
 
@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
     pub_key = bytes.fromhex(data[next(iter(data.keys()))]['pk'])
     pol = '(DEPT1 and TEAM1)'
-    print('POLICY =', pol)
+    # print('POLICY =', pol)
     pairing_group = PairingGroup('MNT224')
 
     apply_re_encryption(file, metadata_file, int(re_enc_len), pub_key, pol, pairing_group, 1)

@@ -30,22 +30,22 @@ def re_encrypt(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pair
     # Check if ciphertext_infile is set and it exists
     if ciphertext_infile is None or not os.path.isfile(ciphertext_infile):
         logging.error('re_encrypt ciphertext_infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_encrypt ciphertext_infile')
+        # if debug:  # ONLY USE FOR DEBUG
+            # # print('EXCEPTION in re_encrypt ciphertext_infile')
         raise Exception
 
     # Check if pk is set
     if pk is None:
         logging.error('re_encrypt new_pk_file exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_encrypt new_pk_file')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in re_encrypt new_pk_file')
         raise Exception
 
     # Check if policy is set
     if policy is None:
         logging.error('re_encrypt policy exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_encrypt policy')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in re_encrypt policy')
         raise Exception
 
     # If re-encryption length is not set, assign a default value
@@ -59,18 +59,18 @@ def re_encrypt(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pair
     enc_key = abe_encrypt(k, pairing_group, pk, policy, debug)
     # enc_re_enc_length = abe_encrypt(re_enc_length, pairing_group, pk, policy, debug)
 
-    if debug:  # ONLY USE FOR DEBUG
-        if seed is not None:
-            print('SEED = (%d) %s' % (len(objectToBytes(seed, pairing_group)), objectToBytes(seed, pairing_group)))
-            print('ENC SEED = (%s) %s' % (type(enc_seed), enc_seed))
-        else:
-            print('SEED =', seed)
-            print('ENC SEED =', seed)
-        print('KEY = (%d) %s' % (len(objectToBytes(k, pairing_group)), objectToBytes(k, pairing_group)))
-        print('ENC KEY = (%s) %s' % (type(enc_key), enc_key))
-        print('IV = (%d) %s' % (len(iv), iv))
-        # print('RE-ENCRYPTION LENGTH = (%d) %s' % (len(objectToBytes(re_enc_length, pairing_group)), objectToBytes(re_enc_length, pairing_group)))
-        # print('ENC RE-ENCRYPTION LENGTH = (%s) %s' % (type(enc_re_enc_length), enc_re_enc_length))
+    # if debug:  # ONLY USE FOR DEBUG
+        # if seed is not None:
+            # print('SEED = (%d) %s' % (len(objectToBytes(seed, pairing_group)), objectToBytes(seed, pairing_group)))
+            # print('ENC SEED = (%s) %s' % (type(enc_seed), enc_seed))
+        # else:
+            # print('SEED =', seed)
+            # print('ENC SEED =', seed)
+        # print('KEY = (%d) %s' % (len(objectToBytes(k, pairing_group)), objectToBytes(k, pairing_group)))
+        # print('ENC KEY = (%s) %s' % (type(enc_key), enc_key))
+        # print('IV = (%d) %s' % (len(iv), iv))
+        # # print('RE-ENCRYPTION LENGTH = (%d) %s' % (len(objectToBytes(re_enc_length, pairing_group)), objectToBytes(re_enc_length, pairing_group)))
+        # # print('ENC RE-ENCRYPTION LENGTH = (%s) %s' % (type(enc_re_enc_length), enc_re_enc_length))
 
     # Encrypt seed, key and number of re-encrypted bytes using ABE with given public key and policy
     enc_seed = objectToBytes(enc_seed, pairing_group) if seed is not None else None
@@ -97,8 +97,8 @@ def re_enc_ciphertext_bytes(ciphertext_infile=None, chunk_size=None, re_enc_leng
     # Check if ciphertext_infile is set and it exists
     if ciphertext_infile is None or not os.path.isfile(ciphertext_infile):
         logging.error('re_enc_ciphertext_bytes ciphertext_infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_enc_ciphertext_bytes ciphertext_infile')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in re_enc_ciphertext_bytes ciphertext_infile')
         raise Exception
 
     # If re-encryption length is not set, assign a default value
@@ -127,15 +127,15 @@ def apply_punctured_enc(ciphertext_infile=None, chunk_size=None, re_enc_length=N
     # Check if the ciphertext_infile is set and it exists
     if ciphertext_infile is None or not os.path.isfile(ciphertext_infile):
         logging.error('apply_punctured_enc ciphertext_infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in apply_punctured_enc ciphertext_infile')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in apply_punctured_enc ciphertext_infile')
         raise Exception
 
     # Check if chunk_size is set
     if chunk_size is None:
         logging.error('apply_punctured_enc ciphertext_offset exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in apply_punctured_enc ciphertext_offset')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in apply_punctured_enc ciphertext_offset')
         raise Exception
 
     from re_enc_engine.const import RE_ENC_MIN_LENGTH, RE_ENC_LENGTH
@@ -151,20 +151,20 @@ def apply_punctured_enc(ciphertext_infile=None, chunk_size=None, re_enc_length=N
     # Check if an error occurred during clamping
     if re_enc_length is None:
         logging.error('clamp value exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in clamp value')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in clamp value')
         raise Exception
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('RE_ENC_LENGTH = %d' % re_enc_length)
+    # if debug:  # ONLY USE FOR DEBUG
+        # print('RE_ENC_LENGTH = %d' % re_enc_length)
 
     # Re-encrypt the given number of bytes in the ciphertext and get re-encryption parameters
     seed, k, iv = re_enc_bytes(ciphertext_infile, chunk_size, re_enc_length, pairing_group, debug)
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('SEED =', seed)
-        print('KEY =', k)
-        print('IV =', iv)
+    # if debug:  # ONLY USE FOR DEBUG
+        # print('SEED =', seed)
+        # print('KEY =', k)
+        # print('IV =', iv)
 
     return seed, k, iv, re_enc_length
 
@@ -186,15 +186,15 @@ def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pa
     # Check if ciphertext_infile is set and it exists
     if ciphertext_infile is None or not os.path.isfile(ciphertext_infile):
         logging.error('re_enc_bytes ciphertext_infile exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_enc_bytes ciphertext_infile')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in re_enc_bytes ciphertext_infile')
         raise Exception
 
     # Check if ciphertext_offset is set
     if chunk_size is None:
         logging.error('re_enc_bytes ciphertext_offset exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_enc_bytes ciphertext_offset')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in re_enc_bytes ciphertext_offset')
         raise Exception
 
     from const import IV_DEFAULT_SIZE, SEED_LENGTH
@@ -211,9 +211,9 @@ def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pa
 
     from binascii import hexlify
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('RE-ENCRYPTION SYM KEY = (%d) %s -> %s' % (len(k), k, hexlify(k).decode()))
-        print('RE-ENCRYPTION IV = (%d) %s -> %s' % (len(iv), iv, hexlify(iv).decode()))
+    # if debug:  # ONLY USE FOR DEBUG
+        # print('RE-ENCRYPTION SYM KEY = (%d) %s -> %s' % (len(k), k, hexlify(k).decode()))
+        # print('RE-ENCRYPTION IV = (%d) %s -> %s' % (len(iv), iv, hexlify(iv).decode()))
 
     # Check if number of bytes to re-encrypt is greater than transformed ciphertext length
     if re_enc_length < chunk_size:  # Apply punctured encryption
@@ -225,8 +225,8 @@ def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pa
 
             for file_chunk in iter(lambda: f.read(chunk_size), ''):
 
-                if debug:  # ONLY USE FOR DEBUG
-                    print('FILE CHUNK TO RE-ENC = (%s) (%d) %s' % (type(file_chunk), len(file_chunk), file_chunk))
+                # if debug:  # ONLY USE FOR DEBUG
+                    # print('FILE CHUNK TO RE-ENC = (%s) (%d) %s' % (type(file_chunk), len(file_chunk), file_chunk))
 
                 if not len(file_chunk):
                     break
@@ -234,24 +234,24 @@ def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pa
                 # Get random bytes to re-encrypt and their positions in the input file
                 bytes_to_re_enc, re_enc_indexes = get_bytes_to_re_enc(file_chunk, re_enc_length, seed, debug)
 
-                if debug:  # ONLY USE FOR DEBUG
-                    print('SEED = (%d) %s' % (len(seed), seed))
-                    print('BYTES TO RE-ENCRYPT = (%d) %s' % (len(bytes_to_re_enc), bytes_to_re_enc))
-                    print('INDEX TO RE-ENCRYPT = (%d) %s' % (len(re_enc_indexes), re_enc_indexes))
+                # if debug:  # ONLY USE FOR DEBUG
+                    # print('SEED = (%d) %s' % (len(seed), seed))
+                    # print('BYTES TO RE-ENCRYPT = (%d) %s' % (len(bytes_to_re_enc), bytes_to_re_enc))
+                    # print('INDEX TO RE-ENCRYPT = (%d) %s' % (len(re_enc_indexes), re_enc_indexes))
 
                 from re_enc_engine.sym_enc_primitives import sym_encrypt
 
                 # Re-encrypt random ciphertext bytes
                 re_encr_bytes = sym_encrypt(key=k, iv=iv, plaintext=bytes_to_re_enc, debug=debug)
 
-                if debug:  # ONLY USE FOR DEBUG
-                    print('RE-ENCRYPTED BYTES = (%s) (%d) %s' % (type(re_encr_bytes), len(re_encr_bytes), re_encr_bytes))
+                # if debug:  # ONLY USE FOR DEBUG
+                    # print('RE-ENCRYPTED BYTES = (%s) (%d) %s' % (type(re_encr_bytes), len(re_encr_bytes), re_encr_bytes))
 
                 # Replace bytes with re-encrypted ones in the given file
                 re_enc_file_chunk = replace_re_enc_bytes(file_chunk, re_encr_bytes, re_enc_indexes, debug)
 
-                if debug:  # ONLY USE FOR DEBUG
-                    print('PUNCTURED FILE CHUNK = (%s) (%d) %s' % (type(re_enc_file_chunk), len(re_enc_file_chunk), re_enc_file_chunk))
+                # if debug:  # ONLY USE FOR DEBUG
+                    # print('PUNCTURED FILE CHUNK = (%s) (%d) %s' % (type(re_enc_file_chunk), len(re_enc_file_chunk), re_enc_file_chunk))
 
                 f.seek(-len(re_enc_file_chunk), os.SEEK_CUR)
                 f.write(re_enc_file_chunk)
@@ -262,8 +262,8 @@ def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pa
 
             for file_chunk in iter(lambda: f.read(chunk_size), ''):
 
-                if debug:  # ONLY USE FOR DEBUG
-                    print('FILE CHUNK TO RE-ENC = (%s) (%d) %s' % (type(file_chunk), len(file_chunk), file_chunk))
+                # if debug:  # ONLY USE FOR DEBUG
+                    # print('FILE CHUNK TO RE-ENC = (%s) (%d) %s' % (type(file_chunk), len(file_chunk), file_chunk))
 
                 if not len(file_chunk):
                     break
@@ -273,14 +273,14 @@ def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pa
                 # Re-encrypt transformed ciphertext
                 re_enc_file_chunk = sym_encrypt(key=k, iv=iv, plaintext=file_chunk, debug=debug)
 
-                if debug:  # ONLY USE FOR DEBUG
-                    print('RE-ENC FILE CHUNK = (%d) %s' % (len(re_enc_file_chunk), re_enc_file_chunk))
+                # if debug:  # ONLY USE FOR DEBUG
+                    # print('RE-ENC FILE CHUNK = (%d) %s' % (len(re_enc_file_chunk), re_enc_file_chunk))
 
                 # Check if there have been errors during re-encryption
                 if len(re_enc_file_chunk) != chunk_size:
                     logging.error('re-encrypted and original transformed ciphertext lengths incompatibility')
-                    if debug:  # ONLY USE FOR DEBUG
-                        print('[ERROR] re-encryption and original lengths incompatibility')
+                    # if debug:  # ONLY USE FOR DEBUG
+                        # print('[ERROR] re-encryption and original lengths incompatibility')
                     raise Exception
 
                 # Overwrite previous transformed ciphertext
@@ -307,32 +307,32 @@ def get_bytes_to_re_enc(data=None, re_enc_length=None, seed=None, debug=0):
     # Check if data is set
     if data is None:
         logging.error('get_bytes_to_re_enc data exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in get_bytes_to_re_enc data')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in get_bytes_to_re_enc data')
         raise Exception
 
     # Check if re_enc_length is set
     if re_enc_length is None:
         logging.error('get_bytes_to_re_enc re_enc_length exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in get_bytes_to_re_enc re_enc_length')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in get_bytes_to_re_enc re_enc_length')
         raise Exception
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('RE-ENCRYPTION SEED = (%d) %s' % (len(seed), seed))
-        print('DATA = (%s) (%d) %s' % (type(data), len(data), data))
+    # if debug:  # ONLY USE FOR DEBUG
+        # print('RE-ENCRYPTION SEED = (%d) %s' % (len(seed), seed))
+        # print('DATA = (%s) (%d) %s' % (type(data), len(data), data))
 
     # Generate a pseudorandom set of indexes to re-encrypt
     re_enc_indexes = ind(seed, re_enc_length, range(len(data)))
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('INDEXES =', re_enc_indexes)
+    # if debug:  # ONLY USE FOR DEBUG
+        # print('INDEXES =', re_enc_indexes)
 
     # Sort indexes to re-encrypt
     re_enc_indexes.sort()
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('SORTED INDEXES =', re_enc_indexes)
+    # if debug:  # ONLY USE FOR DEBUG
+        # print('SORTED INDEXES =', re_enc_indexes)
 
     # Define variables
     bytes_to_re_enc = b''
@@ -340,14 +340,14 @@ def get_bytes_to_re_enc(data=None, re_enc_length=None, seed=None, debug=0):
     # Get bytes to re-encrypt
     for index in re_enc_indexes:
 
-        if debug:  # ONLY USE FOR DEBUG
-            print('BYTE TO RE-ENCRYPT #', index, '=', data[index:index+1])
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('BYTE TO RE-ENCRYPT #', index, '=', data[index:index+1])
 
         # Append the hexadecimal representation of the byte to a string
         bytes_to_re_enc += data[index:index+1]
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('BYTES TO RE-ENC = (%d) %s' % (len(bytes_to_re_enc), bytes_to_re_enc))
+    # if debug:  # ONLY USE FOR DEBUG
+        # print('BYTES TO RE-ENC = (%d) %s' % (len(bytes_to_re_enc), bytes_to_re_enc))
 
     return bytes_to_re_enc, re_enc_indexes
 
@@ -367,22 +367,22 @@ def ind(seed=None, size=None, dataset=None, debug=0):
     # Check if seed is set
     if seed is None:
         logging.error('ind seed exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in ind seed')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in ind seed')
         raise Exception
 
     # Check if size is set
     if size is None:
         logging.error('ind size exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in ind size')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in ind size')
         raise Exception
 
     # Check if dataset is set
     if dataset is None:
         logging.error('ind set exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in ind set')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in ind set')
         raise Exception
 
     import random   # [WARNING] NOT CRYPTOGRAPHICALLY SECURE
@@ -390,9 +390,9 @@ def ind(seed=None, size=None, dataset=None, debug=0):
     # Plant the given seed for random generator
     random.seed(a=seed)
 
-    print('SEED =', seed)
-    print('DATASET =', dataset)
-    print('SIZE =', size)
+    # print('SEED =', seed)
+    # print('DATASET =', dataset)
+    # print('SIZE =', size)
 
     # Return a random sample of 'size' elements from the given set
     return random.sample(dataset, size)
@@ -412,22 +412,22 @@ def replace_re_enc_bytes(data=None, re_encr_bytes=None, re_enc_indexes=None, deb
     # Check if data is set
     if data is None:
         logging.error('replace_re_enc_bytes data exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in replace_re_enc_bytes data')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in replace_re_enc_bytes data')
         raise Exception
 
     # Check if re_encr_bytes is set
     if re_encr_bytes is None:
         logging.error('replace_re_enc_bytes re_encr_bytes exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in replace_re_enc_bytes re_encr_bytes')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in replace_re_enc_bytes re_encr_bytes')
         raise Exception
 
     # Check if re_enc_indexes is set
     if re_enc_indexes is None:
         logging.error('replace_re_enc_bytes re_enc_indexes exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in replace_re_enc_bytes re_enc_indexes')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in replace_re_enc_bytes re_enc_indexes')
         raise Exception
 
     data = bytearray(data)
@@ -435,13 +435,13 @@ def replace_re_enc_bytes(data=None, re_encr_bytes=None, re_enc_indexes=None, deb
     # Overwrite bytes in the specified file
     for i in range(len(re_enc_indexes)):
 
-        if debug:  # ONLY USE FOR DEBUG
-            print('#%d: REPLACING BYTE IN POSITION %d WITH BYTE %s' % (i, re_enc_indexes[i], re_encr_bytes[i:i+1]))
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('#%d: REPLACING BYTE IN POSITION %d WITH BYTE %s' % (i, re_enc_indexes[i], re_encr_bytes[i:i+1]))
 
         # Overwrite byte with re-encrypted one
         data[re_enc_indexes[i]:re_enc_indexes[i]+1] = re_encr_bytes[i:i+1]
 
-    print('REPLACED BYTES DATA = (%s) (%d) %s' % (type(data), len(data), data))
+    # print('REPLACED BYTES DATA = (%s) (%d) %s' % (type(data), len(data), data))
 
     return bytes(data)
 
@@ -461,37 +461,37 @@ def abe_encrypt(data=None, pairing_group=None, pk=None, policy=None, debug=0):
     # Check if data is set
     if data is None:
         logging.error('encrypt_seed_key_len data exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in encrypt_seed_key_len data')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in encrypt_seed_key_len data')
         raise Exception
 
     # Check if pk is set
     if pk is None:
         logging.error('encrypt_seed_key_len pk_file exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in encrypt_seed_key_len pk_file')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in encrypt_seed_key_len pk_file')
         raise Exception
 
     # Check if policy is set
     if policy is None:
         logging.error('encrypt_seed_key_len policy exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in encrypt_seed_key_len policy')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in encrypt_seed_key_len policy')
         raise Exception
 
-    print('DATA = (%s) %s' % (type(data), data))
-    print('PK = (%s) %s' % (type(pk), pk))
-    print('POLICY = (%s) %s' % (type(policy), policy))
+    # print('DATA = (%s) %s' % (type(data), data))
+    # print('PK = (%s) %s' % (type(pk), pk))
+    # print('POLICY = (%s) %s' % (type(policy), policy))
 
     # Encrypt data with ABE
     # cpabe = AC17CPABE(pairing_group, 2)
     cpabe = CPabe_BSW07(pairing_group)
     enc_data = cpabe.encrypt(pk, data, policy)
-    print('ENC DATA WITH POLICY = (%d) %s' % (len(enc_data), enc_data))
+    # print('ENC DATA WITH POLICY = (%d) %s' % (len(enc_data), enc_data))
     enc_data.pop('policy')
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('ENCRYPTED DATA = (%d) %s' % (len(enc_data), enc_data))
+    # if debug:  # ONLY USE FOR DEBUG
+        # print('ENCRYPTED DATA = (%d) %s' % (len(enc_data), enc_data))
 
     return enc_data
 
@@ -511,22 +511,22 @@ def re_decrypt(data=None, pk_file=None, sk_file=None, enc_params=None, iv=None, 
     # Check if data is set
     if data is None:
         logging.error('re_decrypt data exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_decrypt data')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in re_decrypt data')
         raise Exception
 
     # Check if pk_file is set and it exists
     if pk_file is None or not os.path.isfile(pk_file):
         logging.error('re_decrypt pk_file exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_decrypt pk_file')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in re_decrypt pk_file')
         raise Exception
 
     # Check if sk_file is set and it exists
     if sk_file is None or not os.path.isfile(sk_file):
         logging.error('re_decrypt sk_file exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in re_decrypt sk_file')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in re_decrypt sk_file')
         raise Exception
 
     # Remove re-encryption
@@ -548,22 +548,22 @@ def decrypt_re_encryption(re_enc_data=None, pk_file=None, sk_file=None, enc_para
     # Check if re_enc_data is set
     if re_enc_data is None or not os.path.isfile(re_enc_data):
         logging.error('decrypt_re_encryption re_enc_data exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in decrypt_re_encryption re_enc_data')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in decrypt_re_encryption re_enc_data')
         raise Exception
 
     # Check if pk_file is set and it exists
     if pk_file is None or not os.path.isfile(pk_file):
         logging.error('decrypt_re_encryption pk_file exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in decrypt_re_encryption pk_file')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in decrypt_re_encryption pk_file')
         raise Exception
 
     # Check if sk_file is set and it exists
     if sk_file is None or not os.path.isfile(sk_file):
         logging.error('decrypt_re_encryption sk_file exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in decrypt_re_encryption sk_file')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in decrypt_re_encryption sk_file')
         raise Exception
 
     # Decrypt seed, key and re_enc_length with ABE using given public and secret keys
@@ -590,22 +590,22 @@ def decrypt_seed_key_len(enc_seed_key_len=None, pk_file=None, sk_file=None, debu
     # Check if enc_seed_key is set
     if enc_seed_key_len is None:
         logging.error('decrypt_seed_key ciphertext exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in decrypt_seed_key ciphertext')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in decrypt_seed_key ciphertext')
         raise Exception
 
     # Check if pk_file is set and it exists
     if pk_file is None or not os.path.isfile(pk_file):
         logging.error('[ERROR] decrypt_seed_key pk_file exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in decrypt_seed_key pk_file')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in decrypt_seed_key pk_file')
         raise Exception
 
     # Check if sk_file is set and it exists
     if sk_file is None or not os.path.isfile(sk_file):
         logging.error('decrypt_seed_key sk_file exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in decrypt_seed_key sk_file')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in decrypt_seed_key sk_file')
         raise Exception
 
     # Decrypt data with ABE
@@ -624,10 +624,10 @@ def decrypt_seed_key_len(enc_seed_key_len=None, pk_file=None, sk_file=None, debu
     # Retrieve params from decryption output file
     seed, key, re_enc_length = struct.unpack('%ds%dsH' % (SEED_LENGTH, SYM_KEY_DEFAULT_SIZE), enc_data)
 
-    if debug:  # ONLY USE FOR DEBUG
-        print('DECRYPTED SEED = (%d) %s' % (len(seed), seed))
-        print('DECRYPTED KEY = (%d) %s' % (len(key), key))
-        print('DECRYPTED RE_ENC_LENGTH = %d' % re_enc_length)
+    # if debug:  # ONLY USE FOR DEBUG
+        # print('DECRYPTED SEED = (%d) %s' % (len(seed), seed))
+        # print('DECRYPTED KEY = (%d) %s' % (len(key), key))
+        # print('DECRYPTED RE_ENC_LENGTH = %d' % re_enc_length)
 
     return seed, key, re_enc_length
 
@@ -648,38 +648,38 @@ def remove_re_enc(re_enc_data=None, seed=None, k=None, re_enc_length=None, iv=No
     # Check if ciphertext is set
     if re_enc_data is None:
         logging.error('remove_re_enc ciphertext exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in remove_re_enc ciphertext')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in remove_re_enc ciphertext')
         raise Exception
 
     # Check if k is set
     if k is None:
         logging.error('remove_re_enc k exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in remove_re_enc k')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in remove_re_enc k')
         raise Exception
 
     # Check if full transformed ciphertext has to be decrypted
     if seed is None:  # Full re-decryption
 
         # Read transformed ciphertext from file
-        if debug:  # ONLY USE FOR DEBUG
-            print('RE_ENC_DATA = (%d) %s' % (len(re_enc_data), re_enc_data))
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('RE_ENC_DATA = (%d) %s' % (len(re_enc_data), re_enc_data))
 
         from re_enc_engine.sym_enc_primitives import sym_decrypt
 
         # Decrypt re-encrypted transformed ciphertext
         re_dec_data = sym_decrypt(key=k, iv=iv, ciphertext=re_enc_data, debug=debug)
 
-        if debug:  # ONLY USE FOR DEBUG
-            logging.error()
-            print('RE-DECRYPTED DATA = (%d) %s' % (len(re_dec_data), re_dec_data))
+        # if debug:  # ONLY USE FOR DEBUG
+            # logging.error()
+            # print('RE-DECRYPTED DATA = (%d) %s' % (len(re_dec_data), re_dec_data))
 
         # Check if lengths are incompatible
         if len(re_dec_data) != len(re_enc_data):
             logging.error('re-decrypted and re-encrypted transformed ciphertext lengths incompatibility')
-            if debug:  # ONLY USE FOR DEBUG
-                print('[ERROR] Re-decryption and original lengths incompatibility')
+            # if debug:  # ONLY USE FOR DEBUG
+                # print('[ERROR] Re-decryption and original lengths incompatibility')
             raise Exception
 
     else:  # Apply punctured encryption
@@ -687,20 +687,20 @@ def remove_re_enc(re_enc_data=None, seed=None, k=None, re_enc_length=None, iv=No
         # Get random re-encrypted bytes to decrypt
         bytes_to_re_enc, re_enc_indexes = get_bytes_to_re_enc(re_enc_data, re_enc_length, seed, debug)
 
-        if debug:  # ONLY USE FOR DEBUG
-            print('SEED = (%d) %s' % (len(seed), seed))
-            print('RE-ENCRYPTED BYTES TO DECRYPT = (%d) %s' % (len(bytes_to_re_enc), bytes_to_re_enc))
-            print('RE-ENCRYPTED INDEXES TO DECRYPT = (%d) %s' % (len(re_enc_indexes), re_enc_indexes))
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('SEED = (%d) %s' % (len(seed), seed))
+            # print('RE-ENCRYPTED BYTES TO DECRYPT = (%d) %s' % (len(bytes_to_re_enc), bytes_to_re_enc))
+            # print('RE-ENCRYPTED INDEXES TO DECRYPT = (%d) %s' % (len(re_enc_indexes), re_enc_indexes))
 
         from re_enc_engine.sym_enc_primitives import sym_decrypt
 
         # Decrypt re-encrypted transformed ciphertext bytes
         dec_ciphertext = sym_decrypt(key=k, iv=iv, ciphertext=bytes_to_re_enc, debug=debug)
 
-        if debug:  # ONLY USE FOR DEBUG
-            from binascii import hexlify
-            print('DECRYPTED CIPHERTEXT = (%d) %s -> %s' % (len(dec_ciphertext), dec_ciphertext,
-                                                            hexlify(dec_ciphertext).decode()))
+        # if debug:  # ONLY USE FOR DEBUG
+            # from binascii import hexlify
+            # print('DECRYPTED CIPHERTEXT = (%d) %s -> %s' % (len(dec_ciphertext), dec_ciphertext,
+            #                                                 hexlify(dec_ciphertext).decode()))
 
         # Replace re-encrypted bytes in the file with decrypted ones
         re_dec_data = replace_re_enc_bytes(re_enc_data, dec_ciphertext, re_enc_indexes, debug)
@@ -731,8 +731,8 @@ def sym_key_gen(pairing_group=None, sym_key_size=None, debug=0):
     # Check if an error occurred during clamping
     if size is None:
         logging.error('sym_key_gen clamp size exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in sym_key_gen clamp size')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in sym_key_gen clamp size')
         raise Exception
 
     import math
@@ -740,8 +740,8 @@ def sym_key_gen(pairing_group=None, sym_key_size=None, debug=0):
     # Check if size is a power of 2
     if not math.log2(size).is_integer():
         logging.error('sym_key_gen size exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in sym_key_gen size')
+        # if debug:  # ONLY USE FOR DEBUG
+            # print('EXCEPTION in sym_key_gen size')
         raise Exception
 
     rand_pg_elem = random_pairing_group_elem_gen(pairing_group, debug)

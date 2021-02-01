@@ -628,12 +628,16 @@ class Abebox(Passthrough):
 
 
 
-def main(mountpoint, root):
-    FUSE(Abebox(root), mountpoint, nothreads=True, foreground=True)
+def main(mountpoint, root, chunksize, randomsize):
+    print("Chunk size: " + str(chunksize) + "\tRandom size: " + str(randomsize))
+    FUSE(Abebox(root, chunksize, randomsize), mountpoint, nothreads=True, foreground=True)
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        # print("Syntax: " + sys.argv[0] + " basedir mountdir")
+    if len(sys.argv) < 3 or len(sys.argv) > 5:
+        print("Syntax: " + sys.argv[0] + " basedir mountdir chunk_size random_size")
         error = 1  # TODO USED ONLY TO FILL PRINT DISABLING
-    main(sys.argv[2], sys.argv[1])  # Optionally, you can pass chunk and random bytes sizes (defaults are respectively 128 and 32)
+    else:
+        chunksize = int(sys.argv[3]) if len(sys.argv) >= 4 else 128
+        randomsize = int(sys.argv[4]) if len(sys.argv) >= 5 else 32
+        main(sys.argv[2], sys.argv[1], chunksize, randomsize)  # Optionally, you can pass chunk and random bytes sizes (defaults are respectively 128 and 32)

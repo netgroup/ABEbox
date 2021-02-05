@@ -4,6 +4,7 @@ import aont as aont
 from Crypto.Cipher import AES
 import re_enc_primitives as re_enc
 import json
+import pairing_group_primitives as pg
 
 from charm.core.engine.util import objectToBytes, bytesToObject
 from charm.core.math.pairing import hashPair as extractor
@@ -15,7 +16,7 @@ import hashlib
 
 if __name__ == '__main__':
 
-    pairing_group = PairingGroup('MNT224')
+    pairing_group = pg.pairing_group_create('MNT224')
     el = pairing_group.random(GT)
     #el = pairing_group.random(G1)
     #el = pairing_group.random(GT)
@@ -47,7 +48,7 @@ if __name__ == '__main__':
 
     abe_pk = {}
     abe_sk = {}
-    pairing_group = PairingGroup('MNT224')
+    pairing_group = pg.pairing_group_create('MNT224')
     # cpabe = AC17CPABE(pairing_group, 2)
     cpabe = CPabe_BSW07(pairing_group)
     policy = '(DEPT1 and TEAM1)'

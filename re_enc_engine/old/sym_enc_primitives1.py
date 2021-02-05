@@ -2,7 +2,8 @@
 This file contains AES-GCM symmetric encryption scheme primitives.
 """
 
-from Crypto.Cipher import AES
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 import const
 import function_utils as fu
@@ -37,7 +38,7 @@ def key_gen(sym_key_size=const.SYM_KEY_DEFAULT_SIZE, debug=0):
         raise Exception
 
     # Generate and return a random symmetric key with the given size
-    return fu.generate_random_bytes(size, debug)
+    return fu.generate_random_string(size, debug)
 
 
 def iv_gen(iv_length=const.IV_DEFAULT_SIZE, debug=0):
@@ -49,7 +50,7 @@ def iv_gen(iv_length=const.IV_DEFAULT_SIZE, debug=0):
     """
 
     # Clamp the size between IV_DEFAULT_SIZE and the system maximum possible value
-    length = fu.clamp(iv_length, const.IV_DEFAULT_SIZE, const.IV_MAX_SIZE)
+    length = fu.clamp(iv_length, const.IV_DEFAULT_SIZE, sys.maxsize)
 
     # Check if an error occurred during clamping
     if length is None:
@@ -66,101 +67,80 @@ def iv_gen(iv_length=const.IV_DEFAULT_SIZE, debug=0):
         raise Exception
 
     # Generate and return a random IV with the given length
-    return fu.generate_random_bytes(iv_length, debug)
+    return fu.generate_random_string(iv_length, debug)
 
 
-def get_cipher(mode=AES.MODE_CTR, init_val=0, tag=None, key=None, iv=None, debug=0):
+def encrypt(key=None, iv=None, plaintext=None, debug=0):
     """
-    Create a cipher with the given mode, key and iv.
-    :param mode: cipher mode
-    :param init_val: initial value (ONLY FOR CTR MODE)
-    :param tag: authentication tag (ONLY FOR GCM MODE)
+    Encrypt the given plaintext using the AES-GCM with the given key and IV.
     :param key: encryption key
     :param iv: initialisation vector
-    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
-    :return: the cipher
-    """
-
-    # Check if key is set
-    if key is None:
-        logging.error('cipher key exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in cipher key')
-        raise Exception
-
-    # Check if iv is set
-    if iv is None:
-        logging.error('cipher iv exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in cipher iv')
-        raise Exception
-
-    # Construct a AES Cipher object with the given mode, key and IV
-    if mode is AES.MODE_CTR:
-        cipher = AES.new(key, mode, initial_value=init_val, nonce=iv)
-    else:
-        cipher = AES.new(key, mode, nonce=iv)
-
-    return cipher
-
-
-def encrypt(cipher=None, plaintext=None, debug=0):
-    """
-    Encrypt the given plaintext using the given cipher.
-    :param cipher: cipher to use for encryption
     :param plaintext: data to encrypt
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: the ciphertext
     """
 
-    # Check if cipher is set
-    if cipher is None:
-        logging.error('encrypt cipher exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in encrypt cipher')
-        raise Exception
-
     # Check if plaintext is set
     if plaintext is None:
-        logging.error('encrypt plaintext exception')
+        logging.error('sym_encrypt plaintext exception')
         if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in encrypt plaintext')
+            print('EXCEPTION in sym_encrypt plaintext')
         raise Exception
 
-    # Construct a AES Cipher object with the given mode, key and IV
-    # encryptor = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend()).encryptor()
+    # Check if key is set
+    if key is None:
+        logging.error('sym_encrypt key exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in sym_encrypt key')
+        raise Exception
 
-    # Encrypt the plaintext and return the related ciphertext
-    # return encryptor.update(plaintext)
-    return cipher.encrypt(plaintext)
+    # Check if iv is set
+    if iv is None:
+        logging.error('sym_encrypt IV exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in sym_encrypt IV')
+        raise Exception
+
+    # Construct an AES-GCM Cipher object with the given key and IV
+    encryptor = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend()).encryptor()
+
+    # Encrypt the plaintext and return the related ciphertext (GCM does not require padding)
+    return encryptor.update(plaintext)
 
 
-def decrypt(cipher=None, ciphertext=None, debug=0):
+def decrypt(key=None, iv=None, ciphertext=None, debug=0):
     """
-    Decrypt the ciphertext using the given cipher.
-    :param cipher: cipher to use for encryption
+    Decrypt the ciphertext using AES-GCM with the given key and IV.
+    :param key: decryption key
+    :param iv: initialisation vector
     :param ciphertext: data to decrypt
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: the plaintext
     """
 
-    # Check if cipher is set
-    if cipher is None:
-        logging.error('decrypt cipher exception')
+    # Check if key is set
+    if key is None:
+        logging.error('sym_decrypt key exception')
         if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in decrypt cipher')
+            print('EXCEPTION in sym_decrypt key')
+        raise Exception
+
+    # Check if iv is set
+    if iv is None:
+        logging.error('sym_decrypt IV exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in sym_decrypt IV')
         raise Exception
 
     # Check if ciphertext is set
     if ciphertext is None:
-        logging.error('decrypt ciphertext exception')
+        logging.error('sym_decrypt ciphertext exception')
         if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in decrypt ciphertext')
+            print('EXCEPTION in sym_decrypt ciphertext')
         raise Exception
 
-    # Construct a AES Cipher object with the given mode, key and IV
-    # decrypter = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend()).decryptor()
+    # Construct a Cipher object, with the key, IV and additionally the GCM tag used for authenticating the message
+    decrypter = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend()).decryptor()
 
     # Decrypt the ciphertext and return the related ciphertext
-    # return decrypter.update(ciphertext)
-    return cipher.decrypt(ciphertext)
+    return decrypter.update(ciphertext)

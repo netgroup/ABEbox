@@ -5,11 +5,10 @@ Rotation" (https://eprint.iacr.org/2017/833.pdf).
 """
 # TODO AGGIORNARE DOCUMENTAZIONE, CONTROLLI VARIABILI, COMMENTI; RIMUOVE FUNZIONI NON UTILIZZATE -> RICONTROLLARE TUTTO!
 
-from ABE.ac17 import AC17CPABE
-from charm.toolbox.pairinggroup import GT, PairingGroup
 from charm.core.engine.util import bytesToObject, objectToBytes
+from charm.schemes.abenc.abenc_bsw07 import CPabe_BSW07
 
-import logging
+import pairing_group_primitives as pg
 
 
 def re_encrypt(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pairing_group=None, pk=None, policy=None, debug=0):
@@ -201,7 +200,7 @@ def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pa
     from sym_enc_primitives import generate_iv
 
     # Create the re-encryption symmetric key
-    k, k_pg_elem = sym_key_gen(pairing_group, SEED_LENGTH, debug)
+    k, k_pg_elem = pg.sym_key_gen(pairing_group, SEED_LENGTH, debug)
 
     # Create the IV for symmetric re-encryption
     iv = generate_iv(IV_DEFAULT_SIZE, debug)
@@ -219,7 +218,7 @@ def re_enc_bytes(ciphertext_infile=None, chunk_size=None, re_enc_length=None, pa
     if re_enc_length < chunk_size:  # Apply punctured encryption
 
         # Generate a pseudorandom seed
-        seed, seed_pg_elem = random_string_gen(pairing_group, SEED_LENGTH, debug)
+        seed, seed_pg_elem = pg.random_string_gen(pairing_group, SEED_LENGTH)
 
         with open(ciphertext_infile, 'rb+') as f:
 
@@ -484,7 +483,8 @@ def abe_encrypt(data=None, pairing_group=None, pk=None, policy=None, debug=0):
     print('POLICY = (%s) %s' % (type(policy), policy))
 
     # Encrypt data with ABE
-    cpabe = AC17CPABE(pairing_group, 2)
+    # cpabe = AC17CPABE(pairing_group, 2)
+    cpabe = CPabe_BSW07(pairing_group)
     enc_data = cpabe.encrypt(pk, data, policy)
     print('ENC DATA WITH POLICY = (%d) %s' % (len(enc_data), enc_data))
     enc_data.pop('policy')
@@ -608,13 +608,14 @@ def decrypt_seed_key_len(enc_seed_key_len=None, pk_file=None, sk_file=None, debu
         raise Exception
 
     # Decrypt data with ABE
-    pairing_group = PairingGroup('MNT224')
+    pairing_group = pg.pairing_group_create('MNT224')
     with open(pk_file, 'rb') as f:
         pk = bytesToObject(f.read(), pairing_group)
     with open(sk_file, 'rb') as f:
         sk = bytesToObject(f.read(), pairing_group)
-    cpabe = AC17CPABE(pairing_group, 2)
-    enc_data = cpabe.decrypt(pk, enc_seed_key_len, sk)
+    # cpabe = AC17CPABE(pairing_group, 2)
+    cpabe = CPabe_BSW07(pairing_group)
+    enc_data = cpabe.decrypt(pk, sk, enc_seed_key_len)
 
     from re_enc_engine.const import H, SYM_KEY_DEFAULT_SIZE, SEED_LENGTH
     import struct
@@ -705,78 +706,3 @@ def remove_re_enc(re_enc_data=None, seed=None, k=None, re_enc_length=None, iv=No
 
     return re_dec_data
 
-
-def sym_key_gen(pairing_group=None, sym_key_size=None, debug=0):
-    """
-        Generate a random symmetric key with given size.
-        :param sym_key_size: length in bytes of the symmetric key
-        :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
-        :return: the randomly generated symmetric key
-        """
-
-    from const import SYM_KEY_MIN_SIZE, SYM_KEY_DEFAULT_SIZE
-    from function_utils import clamp
-
-    # If sym_key_size is not defined, set a default value
-    if sym_key_size is None:
-        sym_key_size = SYM_KEY_DEFAULT_SIZE
-
-    import sys
-
-    # Clamp the size between SYM_KEY_MIN_SIZE and the system maximum possible value
-    size = clamp(sym_key_size, SYM_KEY_MIN_SIZE, sys.maxsize)
-
-    # Check if an error occurred during clamping
-    if size is None:
-        logging.error('sym_key_gen clamp size exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in sym_key_gen clamp size')
-        raise Exception
-
-    import math
-
-    # Check if size is a power of 2
-    if not math.log2(size).is_integer():
-        logging.error('sym_key_gen size exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in sym_key_gen size')
-        raise Exception
-
-    rand_pg_elem = random_pairing_group_elem_gen(pairing_group, debug)
-    key = objectToBytes(rand_pg_elem, pairing_group)[: sym_key_size]
-
-    # Generate and return a random symmetric key with the given size
-    return key, rand_pg_elem
-
-
-def random_string_gen(pairing_group=None, length=None, debug=0):
-    """
-            Generate a random symmetric key with given size.
-            :param sym_key_size: length in bytes of the symmetric key
-            :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
-            :return: the randomly generated symmetric key
-            """
-
-    from const import SEED_LENGTH
-
-    # If sym_key_size is not defined, set a default value
-    if length is None:
-        length = SEED_LENGTH
-
-    rand_pg_elem = random_pairing_group_elem_gen(pairing_group, debug)
-    rand_str = objectToBytes(rand_pg_elem, pairing_group)[: length]
-
-    # Generate and return a random symmetric key with the given size
-    return rand_str, rand_pg_elem
-
-
-def random_pairing_group_elem_gen(pairing_group=None, debug=0):
-    """
-    Generate a random byte string with the given length.
-    :param length: length in bytes of the string to generate
-    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
-    :return: the random bytes string
-    """
-
-    # Return a random string with the given length
-    return pairing_group.random(GT)

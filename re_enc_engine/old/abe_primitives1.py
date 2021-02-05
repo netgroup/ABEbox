@@ -46,9 +46,10 @@ def setup(pk_outfile=const.ABE_PK_FILE, msk_outfile=const.ABE_MSK_FILE, pairing_
 
 def keygen(sk_outfile=None, pk_file=const.ABE_PK_FILE, msk_file=const.ABE_MSK_FILE,
            pairing_group_curve=const.PAIRING_GROUP_CURVE, attr_list=None, debug=0):
-    """ TODO update documentation
-    Generate a secret key with the listed attributes using public key and master secret key. Output will be written to
-    the file "priv_key" unless sk_outfile is set. Attributes can be non−numerical and numerical:
+    # TODO Correct documentation
+    """
+    Generate a key with the listed attributes using public key and master secret key. Output will be written to the file
+    "priv_key" unless sk_outfile is set. Attributes can be non−numerical and numerical:
     - non−numerical attributes are simply any string of letters, digits, and underscores beginning with a letter;
     - numerical attributes are specified as ‘attr = N’, where N is a non−negative integer less than 2^64 and ‘attr’ is
       another string. The whitespace around the ‘=’ is optional. One may specify an explicit length of k bits for the
@@ -117,7 +118,7 @@ def keygen(sk_outfile=None, pk_file=const.ABE_PK_FILE, msk_file=const.ABE_MSK_FI
 
 def encrypt(data=None, pairing_group=None, pk=None, policy=None, debug=0):
     """
-    Encrypt data using ABE scheme with the given public key and policy
+    Encrypt data using CP-ABE scheme with the given public key and policy
     :param data: the content to encrypt
     :param pairing_group: pairing group to use
     :param pk: public key to use for encryption
@@ -152,14 +153,13 @@ def encrypt(data=None, pairing_group=None, pk=None, policy=None, debug=0):
         print('PK = (%s) %s' % (type(pk), pk))
         print('POLICY = (%s) %s' % (type(policy), policy))
 
-    # Encrypt data with CP-ABE
+    # Encrypt data with ABE
     cpabe = CPabe_BSW07(pairing_group)
     enc_data = cpabe.encrypt(pk, data, policy)
 
     if debug:  # ONLY USE FOR DEBUG
         print('ENC DATA WITH POLICY = (%d) %s' % (len(enc_data), enc_data))
 
-    # Remove policy from encrypted data
     enc_data.pop('policy')
 
     if debug:  # ONLY USE FOR DEBUG
@@ -168,38 +168,117 @@ def encrypt(data=None, pairing_group=None, pk=None, policy=None, debug=0):
     return enc_data
 
 
-def decrypt(enc_data=None, pk=None, sk=None, pairing_group=None, debug=0):
+def decrypt(data=None, pairing_group=None, pk=None, sk=None, policy=None, debug=0):
     """
-    Decrypt encrypted data with CP-ABE using the given public and secret key.
-    :param enc_data: encrypted data to decrypt
-    :param pk: CP-ABE public key
-    :param sk: CP-ABE secret key
+    Decrypt data using CP-ABE scheme with the given public key and policy
+    :param data: the content to encrypt
     :param pairing_group: pairing group to use
+    :param pk: public key to use for encryption
+    :param policy: policy to apply during encryption
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
-    :return: decrypted data
+    :return: encrypted data
     """
 
-    # Check if enc_data is set
-    if enc_data is None:
-        logging.error('decrypt_seed_key ciphertext exception')
+    # Check if data is set
+    if data is None:
+        logging.error('encrypt_seed_key_len data exception')
         if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in decrypt_seed_key ciphertext')
+            print('EXCEPTION in encrypt_seed_key_len data')
         raise Exception
 
-    # Check if pk is set and it exists
+    # Check if pk is set
     if pk is None:
-        logging.error('[ERROR] decrypt_seed_key pk_file exception')
+        logging.error('encrypt_seed_key_len pk_file exception')
         if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in decrypt_seed_key pk_file')
+            print('EXCEPTION in encrypt_seed_key_len pk_file')
         raise Exception
 
-    # Check if sk is set and it exists
-    if sk is None:
-        logging.error('decrypt_seed_key sk_file exception')
+    # Check if policy is set
+    if policy is None:
+        logging.error('encrypt_seed_key_len policy exception')
         if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in decrypt_seed_key sk_file')
+            print('EXCEPTION in encrypt_seed_key_len policy')
         raise Exception
 
-    # Decrypt data with CP-ABE and return the result
+    if debug:  # ONLY USE FOR DEBUG
+        print('DATA = (%s) %s' % (type(data), data))
+        print('PK = (%s) %s' % (type(pk), pk))
+        print('POLICY = (%s) %s' % (type(policy), policy))
+
+    # Encrypt data with ABE
     cpabe = CPabe_BSW07(pairing_group)
-    return cpabe.decrypt(pk, sk, enc_data)
+    enc_data = cpabe.encrypt(pk, data, policy)
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('ENC DATA WITH POLICY = (%d) %s' % (len(enc_data), enc_data))
+
+    enc_data.pop('policy')
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('ENCRYPTED DATA = (%d) %s' % (len(enc_data), enc_data))
+
+    return enc_data
+
+
+def decrypt(dec_outfile=None, pk_file=const.ABE_PK_FILE, sk_file=const.ABE_SK_FILE, ciphertext_file=None,
+            pairing_group_curve=const.PAIRING_GROUP_CURVE, debug=0):
+    # TODO Correct documentation
+    """
+    Decrypt ciphertext_file using secret and public keys. If the name of ciphertext_file is X.cpabe, the decrypted file
+    will be written as X and ciphertext_file will be removed; otherwise the file will be decrypted in place. Use of
+    dec_outfile overrides this behavior.
+    :param dec_outfile: file where decrypted ciphertext will be saved
+    :param pk_file: file where public key is stored
+    :param sk_file: file where secret key is stored
+    :param ciphertext_file: file to decrypt
+    :param pairing_group_curve: string representing curve to use for the pairing group
+    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+    """
+
+    # Check if pk_file is set and it exists
+    if pk_file is None or not os.path.isfile(pk_file):
+        logging.error('decrypt pk_file exception')
+        if debug:   # ONLY USE FOR DEBUG
+            print('EXCEPTION in decrypt pk_file')
+        raise Exception
+
+    # Check if sk_file is set and it exists
+    if sk_file is None or not os.path.isfile(sk_file):
+        logging.error('decrypt sk_file exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in decrypt sk_file')
+        raise Exception
+
+    # Check if ciphertext_file is set and it exists
+    if ciphertext_file is None or not os.path.isfile(ciphertext_file):
+        logging.error('decrypt ciphertext_file exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in decrypt ciphertext_file')
+        raise Exception
+
+    # Instantiate a bilinear pairing map with the given curve
+    pairing_group = PairingGroup(pairing_group_curve)
+
+    # CP-ABE
+    cpabe = CPabe_BSW07(pairing_group)
+
+    # Read public and secret key from specified files
+    with open(pk_file, 'r') as fin:
+        pk = bytesToObject(bytes.fromhex(fin.read()), pairing_group)
+
+    with open(sk_file, 'r') as fin:
+        sk = bytesToObject(bytes.fromhex(fin.read()), pairing_group)
+
+    # Read ciphertext from specified file
+    with open(ciphertext_file, 'r') as fin:
+        ciphertext = bytesToObject(bytes.fromhex(fin.read()), pairing_group)
+
+    # Decrypt the ciphertext
+    plaintext = cpabe.decrypt(pk, sk, ciphertext)
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('CP-ABE PLAINTEXT =', plaintext)
+
+    # Save plaintext on the specified output file
+    with open(dec_outfile, 'w') as fout:
+        fout.write(plaintext)

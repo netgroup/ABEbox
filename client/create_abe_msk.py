@@ -4,17 +4,17 @@ Utility file: create a test msk and private key
 
 from charm.core.engine.util import objectToBytes, bytesToObject
 from charm.schemes.abenc.abenc_bsw07 import CPabe_BSW07
-from charm.toolbox.pairinggroup import PairingGroup, GT
 from pathlib import Path
 
 import hashlib
 import json
+import pairing_group_primitives as pg
 
 
 def main():
     # instantiate a bilinear pairing map
     # 'MNT224' represents an asymmetric curve with 224-bit base field
-    pairing_group = PairingGroup('MNT224')
+    pairing_group = pg.pairing_group_create('MNT224')
 
     # CP-ABE
     cpabe = CPabe_BSW07(pairing_group)
@@ -62,4 +62,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

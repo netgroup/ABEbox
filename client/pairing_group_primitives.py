@@ -3,7 +3,7 @@ This file contains all the primitives for parameters creation from a Pairing Gro
 """
 
 from charm.core.engine.util import objectToBytes
-from charm.toolbox.pairinggroup import GT, PairingGroup
+from charm.toolbox.pairinggroup import hashPair, GT, PairingGroup, ZR
 from const import SEED_LENGTH, SYM_KEY_MIN_SIZE, SYM_KEY_DEFAULT_SIZE
 from function_utils import clamp
 
@@ -83,3 +83,22 @@ def random_pairing_group_elem_gen(pairing_group=None, pg_set=GT):
 
     # Return a random element from the given pairing group and set
     return pairing_group.random(pg_set)
+
+
+def hash_chain(pairing_group=None, start_pg_elem=None, hops_num=0):
+    """
+    Compute the pairing group element after the given number of hops using the hash chain by the given starting pairing
+    group element.
+    :param pairing_group: pairing group used for the hash chain
+    :param start_pg_elem: starting pairing group element
+    :param hops_num: number of hash operations to perform
+    :return: the resulting pairing group element
+    """
+
+    # Compute the hash chain hops
+    res_pg_elem = start_pg_elem
+    for i in range(hops_num):
+        r = pairing_group.init(ZR, int(hashPair(res_pg_elem).decode('utf-8'), 16))
+        res_pg_elem = res_pg_elem ** r
+
+    return res_pg_elem

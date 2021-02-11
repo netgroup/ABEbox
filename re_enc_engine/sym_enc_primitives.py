@@ -127,11 +127,7 @@ def encrypt(cipher=None, plaintext=None, debug=0):
             print('EXCEPTION in encrypt plaintext')
         raise Exception
 
-    # Construct a AES Cipher object with the given mode, key and IV
-    # encryptor = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend()).encryptor()
-
     # Encrypt the plaintext and return the related ciphertext
-    # return encryptor.update(plaintext)
     return cipher.encrypt(plaintext)
 
 
@@ -158,9 +154,5 @@ def decrypt(cipher=None, ciphertext=None, debug=0):
             print('EXCEPTION in decrypt ciphertext')
         raise Exception
 
-    # Construct a AES Cipher object with the given mode, key and IV
-    # decrypter = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend()).decryptor()
-
     # Decrypt the ciphertext and return the related ciphertext
-    # return decrypter.update(ciphertext)
     return cipher.decrypt(ciphertext)

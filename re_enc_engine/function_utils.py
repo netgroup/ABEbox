@@ -5,6 +5,7 @@ This file contains all the common basic functions used from the software.
 from const import LOG_FILE_PATH, LOG_FILE_NAME
 from datetime import datetime
 
+import hashlib
 import logging
 import os.path
 import secrets
@@ -142,3 +143,19 @@ def init_logger():
     # Set logger configuration
     logging.basicConfig(filename=log_file, filemode='a', format='%(asctime)s\t[%(levelname)s] %(name)s : %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+
+
+def hash_chain(start_elem=None, hops_num=0):
+    """
+    Compute the element after the given number of hops using the hash chain by the given starting element.
+    :param start_elem: starting element
+    :param hops_num: number of hash operations to perform
+    :return: the resulting element
+    """
+
+    # Compute the hash chain hops
+    res_elem = start_elem
+    for i in range(hops_num):
+        res_elem = hashlib.sha256(res_elem).digest()
+
+    return res_elem[: len(start_elem)]

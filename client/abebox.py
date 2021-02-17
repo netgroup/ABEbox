@@ -36,6 +36,8 @@ class Abebox(Passthrough):
 
     def __init__(self, root, chunk_size=128, random_size=32, initial_re_encs_num=0, debug=0):
 
+        
+        self.starting_time = time() * 1000.0
         # Define variables for AONT
         self.chunk_size = chunk_size
         self.random_size = random_size
@@ -47,6 +49,7 @@ class Abebox(Passthrough):
 
         super(Abebox, self).__init__(root)
 
+
     # Take the time
     def __getattribute__(self,name):
         attr = object.__getattribute__(self, name)
@@ -55,7 +58,8 @@ class Abebox(Passthrough):
                 starting_time = time() * 1000.0
                 result = attr(*args, **kwargs)
                 elapsed_time = (time() * 1000.0) - starting_time
-                print('[{}]done calling {}'.format(elapsed_time, attr.__name__))
+                elapsed_time_from_beginning = (time() * 1000.0) - self.starting_time
+                print('[{}] [{}] done calling {}'.format(elapsed_time_from_beginning, elapsed_time, attr.__name__))
                 return result
             return newfunc
         else:
@@ -184,16 +188,27 @@ class Abebox(Passthrough):
 
         # Add information about initial re-encryptions to apply to metadata file
         for i in range(initial_re_encs_num):
+            starting_time = time() * 1000.0
 
             # Create re-encryption params
             pk = objectToBytes(next(iter(self.abe_pk.values())), self.pairing_group)    # TODO CHANGE FOR REAL USE
+
+
             policy = '(DEPT1 and TEAM1)'                                                # TODO CHANGE FOR REAL USE
             seed, seed_pg_elem = pg.random_string_gen(self.pairing_group, const.SEED_LENGTH)
             key, key_pg_elem = pg.sym_key_gen(self.pairing_group, const.SYM_KEY_DEFAULT_SIZE)
+
+            elapsed_time = (time() * 1000.0) - starting_time
+            print('[{}] after sym_key_gen'.format(elapsed_time))
+
             enc_seed = objectToBytes(abe.encrypt(seed_pg_elem, self.pairing_group, bytesToObject(pk, self.pairing_group),
                                                  policy, self.debug), self.pairing_group) if seed is not None else seed
+            elapsed_time = (time() * 1000.0) - starting_time
+            print('[{}] after abe.encrypt 1'.format(elapsed_time))
             enc_key = objectToBytes(abe.encrypt(key_pg_elem, self.pairing_group, bytesToObject(pk, self.pairing_group),
                                                 policy, self.debug), self.pairing_group)
+            elapsed_time = (time() * 1000.0) - starting_time
+            print('[{}] after abe.encrypt 2'.format(elapsed_time))
             iv = sym.iv_gen(const.IV_DEFAULT_SIZE)
             re_enc_length = const.RE_ENC_LENGTH
 
@@ -206,6 +221,9 @@ class Abebox(Passthrough):
                 'iv': hexlify(iv).decode(),
                 're_enc_length': re_enc_length
             })
+
+            elapsed_time = (time() * 1000.0) - starting_time
+            print('[{}] end of {}-th cycle'.format(elapsed_time, i))
 
 
     def _create_re_enc_params(self, re_enc_op, init_val):
@@ -620,6 +638,8 @@ class Abebox(Passthrough):
 
     def release(self, path, fh):
 
+        starting_time = time() * 1000.0
+
         if self.debug:
             print("Releasing file ", path)
 
@@ -675,6 +695,11 @@ class Abebox(Passthrough):
                 # Create symmetric cipher with proper initial value
                 sym_cipher = sym.get_cipher(AES.MODE_CTR, init_val, None, self.meta['sym_key'][:16], self.meta['nonce'],
                                             self.debug)
+
+                elapsed_time = (time() * 1000.0) - starting_time
+                elapsed_time_from_beginning = (time() * 1000.0) - self.starting_time
+                print('[{}] [{}] ** RELEASE - chunk {} after sym.get_cipher **'.format(elapsed_time_from_beginning, elapsed_time, chunk_num))
+
                 # Encrypt file chunk
                 enc_chunk = sym.encrypt(sym_cipher, chunk, self.debug)
                 # enc_chunk = chunk
@@ -687,6 +712,10 @@ class Abebox(Passthrough):
                 aont_args = self._create_aont_transf_params(len(enc_chunk))
                 # Apply AONT to the encrypted chunk
                 transf_enc_chunk = aont.transform(enc_chunk, aont_args, self.debug)
+
+                elapsed_time = (time() * 1000.0) - starting_time
+                elapsed_time_from_beginning = (time() * 1000.0) - self.starting_time
+                print('[{}] [{}] ** RELEASE - chunk {} after aont.transform **'.format(elapsed_time_from_beginning, elapsed_time, chunk_num))
 
                 if self.debug:
                     print("AONT successfully applied")
@@ -709,6 +738,9 @@ class Abebox(Passthrough):
                         if self.debug:
                             print("RE-ENCRYPTED CHUNK = (%d) %s" % (len(re_enc_transf_enc_chunk), re_enc_transf_enc_chunk))
                             print("Re-encryption successfully re-applied")
+                    elapsed_time = (time() * 1000.0) - starting_time
+                    elapsed_time_from_beginning = (time() * 1000.0) - self.starting_time
+                    print('[{}] [{}] ** RELEASE - chunk {} after all re_enc_op **'.format(elapsed_time_from_beginning, elapsed_time, chunk_num))
 
                     if self.debug:
                         print("Re-encryptions successfully re-applied")
@@ -750,8 +782,13 @@ class Abebox(Passthrough):
 
         self._dump_meta(meta_directory + self.filename)
 
+        elapsed_time = (time() * 1000.0) - starting_time
+        elapsed_time_from_beginning = (time() * 1000.0) - self.starting_time
+        print('[{}] [{}] ** RELEASE END **'.format(elapsed_time_from_beginning, elapsed_time))
+
         self.enc_fp.close()
         self.temp_fp.close()
+
 
         return
         # return os.close(fh)

@@ -1,4 +1,3 @@
-import os
 import aont as aont
 
 from Crypto.Cipher import AES
@@ -12,7 +11,6 @@ from charm.schemes.abenc.abenc_bsw07 import CPabe_BSW07
 from charm.toolbox.pairinggroup import PairingGroup, ZR, GT, G1, G2, hashPair
 from charm.toolbox.policytree import PolicyParser
 
-import hashlib
 
 if __name__ == '__main__':
 

@@ -8,6 +8,7 @@ from Crypto.Cipher import AES
 from fuse import FUSE, FuseOSError, Operations
 from passthrough import Passthrough
 from pathlib import Path
+from time import time
 
 import abe_primitives as abe
 import aont
@@ -382,7 +383,7 @@ class Abebox(Passthrough):
 
 
     def read(self, path, length, offset, fh):
-
+        starting_time = time() * 1000.0
         # self.enc_fp.close()
         # self.enc_fp = open(self._full_path(path), 'rb')
 
@@ -448,11 +449,12 @@ class Abebox(Passthrough):
         if self.debug:
             print("reading ", length, " bytes on tmp fs ", self.temp_fp)
 
+        print('READ TIME =', (time() * 1000.0) - starting_time)
         return super(Abebox, self).read(path, length, offset, self.temp_fp.fileno())
 
 
     def write(self, path, buf, offset, fh):
-
+        starting_time = time() * 1000.0
         # self.enc_fp.close()
         # self.enc_fp = open(self._full_path(path), 'wb')
 
@@ -514,6 +516,7 @@ class Abebox(Passthrough):
         if self.debug:
             print("writing ", buf, " on ", path, " on tmp fs ", self.temp_fp)
 
+        print('WRITE TIME =', (time() * 1000.0) - starting_time)
         return super(Abebox, self).write(path, buf, offset, self.temp_fp.fileno())
 
 
@@ -605,7 +608,7 @@ class Abebox(Passthrough):
 
 
     def release(self, path, fh):
-
+        starting_time = time() * 1000.0
         if self.debug:
             print("Releasing file ", path)
 
@@ -738,7 +741,7 @@ class Abebox(Passthrough):
 
         self.enc_fp.close()
         self.temp_fp.close()
-
+        print('RELEASE TIME =', (time() * 1000.0) - starting_time)
         return
         # return os.close(fh)
         # return fh.close()

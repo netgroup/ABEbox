@@ -24,6 +24,8 @@ import secrets
 import sym_enc_primitives as sym
 import tempfile
 
+from time import time
+
 
 logging.basicConfig()
 logger = logging.getLogger('fuse')
@@ -45,7 +47,19 @@ class Abebox(Passthrough):
 
         super(Abebox, self).__init__(root)
 
-    # Utility functions
+    # Take the time
+    def __getattribute__(self,name):
+        attr = object.__getattribute__(self, name)
+        if hasattr(attr, '__call__'):
+            def newfunc(*args, **kwargs):
+                starting_time = time() * 1000.0
+                result = attr(*args, **kwargs)
+                elapsed_time = (time() * 1000.0) - starting_time
+                print('[{}]done calling {}'.format(elapsed_time, attr.__name__))
+                return result
+            return newfunc
+        else:
+            return attr
 
     def _read_in_chunks(self, file_object, chunk_size=128):
         """Lazy function (generator) to read a file piece by piece.

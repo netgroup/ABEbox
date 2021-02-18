@@ -180,7 +180,7 @@ print("Block size: ", block_size/1024, "KB")
 # VARIO IL FILESIZE E LE METTO SULLE X
 dim_range = list(range(512*1024, 3*1024*1024+1, 512*1024)) # chunksize in bytes
 dim_range = [4*1024, 256*1024, 1024*1024, 3*1024*1024]
-x_filesize(dim_range, stat_attempts, block_size, directory, random_op)
+#x_filesize(dim_range, stat_attempts, block_size, directory, random_op)
 
 # VARIO I CHUNKSIZE E LI METTO SULLE X, FISSATA LA DIMENSIONE DEL FILE
 file_dim = 3*1024*1024
@@ -193,7 +193,7 @@ file_dim = 3*1024*1024
 reenc_range = list(range(0, 11, 1)) # re-encryption numbers
 #reenc_range = [0, 1, 2]
 chunk_size = block_size + 32
-#x_reenc(version, reenc_range, stat_attempts, file_dim, block_size, chunk_size, directory, random_op)
+x_reenc(version, reenc_range, stat_attempts, file_dim, block_size, chunk_size, directory, random_op)
 
 """t = write_test(3145728, random_op)
 print(t)

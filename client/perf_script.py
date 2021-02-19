@@ -29,8 +29,8 @@ if __name__ == '__main__':
     sample_mod_dec = 0
     sample_hc_dec = 0
     sample_mod_hc_dec = 0
-    sample_num = 100
-    iterations = 1
+    sample_num = 10
+    iterations = 10
 
     # ========== ENCRYPTION ========== #
     for k in range(sample_num):

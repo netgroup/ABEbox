@@ -92,8 +92,9 @@ def get_re_enc_params(re_enc_info=None, debug=0):
         print('RE-ENC INFOS =', re_enc_info)
 
     # Required re-encryption parameters
-    re_enc_params = ['pk', 'sk', 'enc_seed', 'enc_key', 're_enc_length', 'iv', 'policy', 'pairing_group', 'init_val',
-                     'last_re_enc_num', 'current_re_enc_num']
+    #re_enc_params = ['pk', 'sk', 'seed', 'key', 're_enc_length', 'iv', 'policy', 'pairing_group', 'init_val',
+    re_enc_params = ['seed', 'key', 're_enc_length', 'iv', 'pairing_group', 'init_val', 'last_re_enc_num',
+                     'current_re_enc_num']
 
     for param in re_enc_params:
         if param not in re_enc_info.keys():
@@ -103,48 +104,51 @@ def get_re_enc_params(re_enc_info=None, debug=0):
             raise Exception
 
     # Extracting re-encryption params
-    pk = re_enc_info[re_enc_params[0]]
-    sk = re_enc_info[re_enc_params[1]]
-    pairing_group = re_enc_info[re_enc_params[7]]
-    enc_seed = bytesToObject(unhexlify(re_enc_info[re_enc_params[2]]), pairing_group) \
-        if re_enc_info[re_enc_params[2]] is not None else None
-    enc_key = bytesToObject(unhexlify(re_enc_info[re_enc_params[3]]), pairing_group)
-    re_enc_length = re_enc_info[re_enc_params[4]]
-    iv = unhexlify(re_enc_info[re_enc_params[5]])
-    policy = str(PolicyParser().parse(re_enc_info[re_enc_params[6]]))
-    init_val = re_enc_info[re_enc_params[8]]
-    last_re_enc_num = re_enc_info[re_enc_params[9]]
-    current_re_enc_num = re_enc_info[re_enc_params[10]]
+    #pk = re_enc_info[re_enc_params[0]]
+    #sk = re_enc_info[re_enc_params[1]]
+    pairing_group = re_enc_info[re_enc_params[4]]
+    seed = bytesToObject(unhexlify(re_enc_info[re_enc_params[0]]), pairing_group) \
+        if re_enc_info[re_enc_params[0]] is not None else None
+    key = bytesToObject(unhexlify(re_enc_info[re_enc_params[1]]), pairing_group)
+    re_enc_length = re_enc_info[re_enc_params[2]]
+    iv = unhexlify(re_enc_info[re_enc_params[3]])
+    #policy = str(PolicyParser().parse(re_enc_info[re_enc_params[6]]))
+    init_val = re_enc_info[re_enc_params[5]]
+    last_re_enc_num = re_enc_info[re_enc_params[6]]
+    current_re_enc_num = re_enc_info[re_enc_params[7]]
 
     if debug:  # ONLY USE FOR DEBUG
-        print('EXTRACTED RE-ENC PARAMS:\nPK = %s\nSK = %s\nENC SEED = (%d) %s\nENC KEY = (%d) %s\nRE-ENC LENGTH = %d\n'
-              'IV = (%d) %s\nPOLICY = %s\nCIPHER INIT VALUE = %d\nLAST RE-ENC NUM = %d\nCURRENT RE-ENC NUM = %d'
-              % (pk, sk, len(enc_seed), enc_seed, len(enc_key), enc_key, re_enc_length, len(iv), iv, policy, init_val,
-                 last_re_enc_num, current_re_enc_num))
+        print('EXTRACTED RE-ENC PARAMS:\nSEED = %s\nKEY = %s\nRE-ENC LENGTH = %d\nIV = (%d) %s\nCIPHER INIT VALUE = %d'
+              '\nLAST RE-ENC NUM = %d\nCURRENT RE-ENC NUM = %d'
+        #print('EXTRACTED RE-ENC PARAMS:\nPK = %s\nSK = %s\nSEED = %s\nKEY = %s\nRE-ENC LENGTH = %d\n'
+              #'IV = (%d) %s\nPOLICY = %s\nCIPHER INIT VALUE = %d\nLAST RE-ENC NUM = %d\nCURRENT RE-ENC NUM = %d'
+              % (seed, key, re_enc_length, len(iv), iv, init_val, last_re_enc_num, current_re_enc_num))
+              #% (pk, sk, seed, key, re_enc_length, len(iv), iv, policy, init_val,
+              #   last_re_enc_num, current_re_enc_num))
 
     # Check if parameters are set
-    if pk is None:
-        logging.error('get_re_enc_params pk exception')
+    # if pk is None:
+    #     logging.error('get_re_enc_params pk exception')
+    #     if debug:  # ONLY USE FOR DEBUG
+    #         print('EXCEPTION in get_re_enc_params pk')
+    #     raise Exception
+    #
+    # if sk is None:
+    #     logging.error('get_re_enc_params sk exception')
+    #     if debug:  # ONLY USE FOR DEBUG
+    #         print('EXCEPTION in get_re_enc_params sk')
+    #     raise Exception
+
+    if seed is None:
+        logging.error('get_re_enc_params seed exception')
         if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in get_re_enc_params pk')
+            print('EXCEPTION in get_re_enc_params seed')
         raise Exception
 
-    if sk is None:
-        logging.error('get_re_enc_params sk exception')
+    if key is None:
+        logging.error('get_re_enc_params key exception')
         if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in get_re_enc_params sk')
-        raise Exception
-
-    if enc_seed is None:
-        logging.error('get_re_enc_params enc_seed exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in get_re_enc_params enc_seed')
-        raise Exception
-
-    if enc_key is None:
-        logging.error('get_re_enc_params enc_key exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in get_re_enc_params enc_key')
+            print('EXCEPTION in get_re_enc_params key')
         raise Exception
 
     if re_enc_length is None:
@@ -159,11 +163,11 @@ def get_re_enc_params(re_enc_info=None, debug=0):
             print('EXCEPTION in get_re_enc_params iv')
         raise Exception
 
-    if policy is None:
-        logging.error('get_re_enc_params policy exception')
-        if debug:  # ONLY USE FOR DEBUG
-            print('EXCEPTION in get_re_enc_params policy')
-        raise Exception
+    # if policy is None:
+    #     logging.error('get_re_enc_params policy exception')
+    #     if debug:  # ONLY USE FOR DEBUG
+    #         print('EXCEPTION in get_re_enc_params policy')
+    #     raise Exception
 
     if init_val is None:
         logging.error('get_re_enc_params init_val exception')
@@ -184,12 +188,12 @@ def get_re_enc_params(re_enc_info=None, debug=0):
         raise Exception
 
     # Decrypt seed, key and re_enc_length with ABE using given public and secret keys
-    seed = None
-    if enc_seed is not None:
-        enc_seed['policy'] = str(policy)
-        seed = abe.decrypt(enc_seed, pk, sk, pairing_group, debug)
-    enc_key['policy'] = str(policy)
-    key = abe.decrypt(enc_key, pk, sk, pairing_group, debug)
+    #seed = None
+    #if enc_seed is not None:
+    #    enc_seed['policy'] = str(policy)
+    #    seed = abe.decrypt(enc_seed, pk, sk, pairing_group, debug)
+    #enc_key['policy'] = str(policy)
+    #key = abe.decrypt(enc_key, pk, sk, pairing_group, debug)
 
     seed = pg.hash_chain(pairing_group, seed, last_re_enc_num - current_re_enc_num)
     key = pg.hash_chain(pairing_group, key, last_re_enc_num - current_re_enc_num)

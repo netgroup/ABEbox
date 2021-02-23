@@ -36,6 +36,7 @@ class Abebox(Passthrough):
     def __init__(self, root, chunk_size=128, random_size=32, initial_re_encs_num=0, max_re_encs_num=100, debug=0):
 
         self.starting_time = time() * 1000.0
+
         # Define variables for AONT
         self.chunk_size = chunk_size
         self.random_size = random_size
@@ -180,7 +181,7 @@ class Abebox(Passthrough):
             # Add decrypted seed and key
             self.meta['re_encs'][0]['enc_seed'] = seed
             self.meta['re_encs'][0]['enc_key'] = key
-            self.meta['re_encs'][0]['iv'] = unhexlify(self.meta['re_encs'][0]['iv'])
+            self.meta['re_encs'][0]['iv'] = unhexlify(re_enc_op['iv'])
 
         # create a symmetric cypher
         # self.sym_cipher = SymmetricCryptoAbstraction(self.meta['sym_key'])
@@ -208,22 +209,23 @@ class Abebox(Passthrough):
             're_encs': self.meta['re_encs']
         }
 
-        # Retrieve public key
-        re_enc_op = enc_meta['re_encs'][0]
-        key_pair_label = re_enc_op['pk']
-        pk = self.abe_pk[key_pair_label]
+        if len(enc_meta['re_encs']):
+            # Retrieve public key
+            re_enc_op = enc_meta['re_encs'][0]
+            key_pair_label = re_enc_op['pk']
+            pk = self.abe_pk[key_pair_label]
 
-        # Encrypt seed
-        enc_seed = objectToBytes(abe.encrypt(re_enc_op['enc_seed'], self.pairing_group, pk, re_enc_op['policy'],
-                                             self.debug), self.pairing_group)
+            # Encrypt seed
+            enc_seed = objectToBytes(abe.encrypt(re_enc_op['enc_seed'], self.pairing_group, pk, re_enc_op['policy'],
+                                                 self.debug), self.pairing_group)
 
-        # Encrypt symmetric key
-        enc_key = objectToBytes(abe.encrypt(re_enc_op['enc_key'], self.pairing_group, pk, re_enc_op['policy'],
-                                            self.debug), self.pairing_group)
+            # Encrypt symmetric key
+            enc_key = objectToBytes(abe.encrypt(re_enc_op['enc_key'], self.pairing_group, pk, re_enc_op['policy'],
+                                                self.debug), self.pairing_group)
 
-        enc_meta['re_encs'][0]['enc_seed'] = hexlify(enc_seed).decode()
-        enc_meta['re_encs'][0]['enc_key'] = hexlify(enc_key).decode()
-        enc_meta['re_encs'][0]['iv'] = hexlify(enc_meta['re_encs'][0]['iv']).decode()
+            enc_meta['re_encs'][0]['enc_seed'] = hexlify(enc_seed).decode()
+            enc_meta['re_encs'][0]['enc_key'] = hexlify(enc_key).decode()
+            enc_meta['re_encs'][0]['iv'] = hexlify(re_enc_op['iv']).decode()
 
         with open(metafile, 'w') as f:
             json.dump(enc_meta, f)
@@ -233,17 +235,13 @@ class Abebox(Passthrough):
 
     def _add_initial_re_encs_info(self, initial_re_encs_num=0):
 
+        # Add information about initial re-encryptions to apply to metadata file
         if initial_re_encs_num > 0:
             # Create re-encryption params
             pk = objectToBytes(next(iter(self.abe_pk.values())), self.pairing_group)    # TODO CHANGE FOR REAL USE
             policy = '(DEPT1 and TEAM1)'                                                # TODO CHANGE FOR REAL USE
-            seed_pg_elem = pg.hash_chain(self.pairing_group, self.last_seed_pg_elem,
-                                         self.max_re_encs_num - initial_re_encs_num)
-            key_pg_elem = pg.hash_chain(self.pairing_group, self.last_key_pg_elem,
-                                        self.max_re_encs_num - initial_re_encs_num)
-            seed = seed_pg_elem
-            key = key_pg_elem
-            iv = self.root_iv
+            seed = pg.hash_chain(self.pairing_group, self.last_seed_pg_elem, self.max_re_encs_num - initial_re_encs_num)
+            key = pg.hash_chain(self.pairing_group, self.last_key_pg_elem, self.max_re_encs_num - initial_re_encs_num)
             re_enc_length = const.RE_ENC_LENGTH
 
             # Add re-encryption params to metadata file
@@ -252,7 +250,7 @@ class Abebox(Passthrough):
                 'policy': policy,
                 'enc_seed': seed,
                 'enc_key': key,
-                'iv': iv,
+                'iv': self.root_iv,
                 're_enc_length': re_enc_length,
                 're_encs_num': initial_re_encs_num
             })
@@ -320,6 +318,11 @@ class Abebox(Passthrough):
         if self.enc_fp.closed:
             self.enc_fp = open(full_path, 'rb+')
 
+        self.enc_fp.seek(0, os.SEEK_END)
+        file_size = self.enc_fp.tell()
+        if file_size <= chunk_num * self.meta['random_size']:
+            return
+
         # Move file pointer
         self.enc_fp.seek(chunk_num * self.meta['chunk_size'])
 
@@ -331,7 +334,7 @@ class Abebox(Passthrough):
             print("Remove re-encryptions from file chunk")
 
         re_encs_field = self.meta['re_encs']
-        # re_enc_init_val =
+        re_enc_init_val = self._get_cipher_initial_value(int(chunk_num) * self.meta['chunk_size'])
 
         if len(re_encs_field) > 0:
 
@@ -340,7 +343,7 @@ class Abebox(Passthrough):
 
             for current_re_enc_index in range(re_encs_num - 1, -1, -1):
                 # Add other params to re-encryption params
-                re_enc_args['init_val'] = self._get_cipher_initial_value(int(chunk_num) * self.meta['chunk_size'])
+                re_enc_args['init_val'] = re_enc_init_val
                 re_enc_args['current_re_enc_num'] = current_re_enc_index
 
                 # Remove re-encryption
@@ -480,6 +483,8 @@ class Abebox(Passthrough):
         # Compute file chunks involved in reading process
         starting_aont_chunk_num, ending_aont_chunk_num = self._get_aont_chunks_range(real_len, offset)
 
+        re_enc_op = self.meta['re_encs'][0]
+
         # Check if those chunks have already been processed
         for chunk_num in range(starting_aont_chunk_num, ending_aont_chunk_num + 1):
             # Check if chunk is already in the list, otherwise add it and all previous ones not inside the list
@@ -519,7 +524,8 @@ class Abebox(Passthrough):
                                             self.debug)
 
                 # Get re-enc parameters
-                self.re_enc_args = self._create_re_enc_params(self.meta['re_encs'][0])
+                if len(self.meta['re_encs']):
+                    self.re_enc_args = self._create_re_enc_params(re_enc_op)
 
                 # Anti-transform and decrypt chunk
                 self._decode(full_path, chunk_num, decoded_offset, sym_cipher, self.re_enc_args)
@@ -551,6 +557,8 @@ class Abebox(Passthrough):
         # Compute file chunks involved in reading process
         starting_aont_chunk_num, ending_aont_chunk_num = self._get_aont_chunks_range(offset + len(buf), offset)
 
+        re_enc_op = self.meta['re_encs'][0]
+
         # Check if those chunks have already been processed
         for chunk_num in range(starting_aont_chunk_num, ending_aont_chunk_num + 1):
             # Check if chunk is already in the list, otherwise add it and all previous ones not inside the list
@@ -562,6 +570,7 @@ class Abebox(Passthrough):
                 for prev_chunk_num in range(chunk_num + 1):
                     if str(prev_chunk_num) not in self.file_written_chunks.keys():
                         self.file_written_chunks[str(prev_chunk_num)] = 1
+                        self.file_read_chunks[str(prev_chunk_num)] = 1
 
                         if self.debug:
                             print('Adding chunk #%d to the already written list with value %d'
@@ -590,12 +599,14 @@ class Abebox(Passthrough):
                                             self.debug)
 
                 # Get re-enc parameters
-                self.re_enc_args = self._create_re_enc_params(self.meta['re_encs'][0])
+                if len(self.meta['re_encs']):
+                    self.re_enc_args = self._create_re_enc_params(re_enc_op)
 
                 # Anti-transform and decrypt chunk
                 self._decode(full_path, chunk_num, decoded_offset, sym_cipher, self.re_enc_args)
                 # Set relative array chunk position as read
                 self.file_written_chunks[str(chunk_num)] = 1
+                self.file_read_chunks[str(chunk_num)] = 1
 
         if self.debug:
             print("writing ", buf, " on ", path, " on tmp fs ", self.temp_fp)
@@ -718,6 +729,8 @@ class Abebox(Passthrough):
             print("Temporary file has size : ", self.temp_fp.seek(0, os.SEEK_END))
         # self.temp_fp.seek(0)
 
+        re_encs_field = self.meta['re_encs']
+
         # Write only modified file chunks
         for chunk_num in self.file_written_chunks.keys():
 
@@ -766,9 +779,8 @@ class Abebox(Passthrough):
                 # If previously applied, re-apply re-encryptions
                 re_enc_transf_enc_chunk = transf_enc_chunk
                 re_enc_init_val = self._get_cipher_initial_value(int(chunk_num) * self.meta['chunk_size'])
-                re_encs_field = self.meta['re_encs']
 
-                if len(re_encs_field) > 0:
+                if re_encs_field:
 
                     if self.debug:
                         print("Re-applying re-encryptions to file chunk")
@@ -779,9 +791,9 @@ class Abebox(Passthrough):
                     for current_re_enc_index in range(re_encs_num):
 
                         # Get re-enc parameters
-                        self.re_enc_args = self._create_re_enc_params(self.meta['re_encs'][0])
+                        self.re_enc_args = self._create_re_enc_params(re_enc_op)
 
-                        # Add current re-encryption index to re-encryption params
+                        # Add other params to re-encryption params
                         self.re_enc_args['init_val'] = re_enc_init_val
                         self.re_enc_args['current_re_enc_num'] = current_re_enc_index
 

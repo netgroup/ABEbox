@@ -111,7 +111,7 @@ class Passthrough(Operations):
         return os.open(full_path, os.O_WRONLY | os.O_CREAT, mode)
 
     def read(self, path, length, offset, fh):
-        #print("read")
+        #print("read", fh, path, offset, length)
         os.lseek(fh, offset, os.SEEK_SET)
         return os.read(fh, length)
 

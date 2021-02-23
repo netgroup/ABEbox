@@ -4,6 +4,7 @@ from Crypto.Cipher import AES
 import re_enc_primitives as re_enc
 import json
 import pairing_group_primitives as pg
+import os, random, string
 
 from charm.core.engine.util import objectToBytes, bytesToObject
 from charm.core.math.pairing import hashPair as extractor
@@ -13,6 +14,29 @@ from charm.toolbox.policytree import PolicyParser
 
 
 if __name__ == '__main__':
+
+    write_string = os.urandom(1024*1024*2)
+    write_string = ''.join(random.choices(string.ascii_uppercase + string.digits, k=1000000*2))
+    with(open('long_test_file', 'w')) as f:
+        f.write(write_string)
+    exit(0)
+
+    write_string = 'ciao'
+    # test create, write, read
+    with open('mountdir/prova', 'w+') as f:
+        f.write(write_string)
+        #f.seek(0, 0)
+    with open('mountdir/prova', 'w+') as f:
+        read_string = f.read()
+        print("written string: {}\t read string: {}".format(write_string, read_string))
+        #self.assertEqual(read_string, write_string)
+
+    # with(open('mountdir/prova', 'w+')) as fin:
+    #     fin.write('AA')
+    #     fin.seek(0, 0)
+    #     print(fin.read())
+
+    exit(0)
 
     pair_g = pg.pairing_group_create()
     # last_elem = pg.random_pairing_group_elem_gen(pair_g)

@@ -8,6 +8,7 @@ from Crypto.Cipher import AES
 from fuse import FUSE, FuseOSError, Operations
 from passthrough import Passthrough
 from pathlib import Path
+from time import time
 
 import abe_primitives as abe
 import aont
@@ -24,8 +25,6 @@ import secrets
 import sym_enc_primitives as sym
 import tempfile
 
-from time import time
-
 
 logging.basicConfig()
 logger = logging.getLogger('fuse')
@@ -37,9 +36,13 @@ class Abebox(Passthrough):
     def __init__(self, root, chunk_size=128, random_size=32, initial_re_encs_num=0, debug=0):
         
         self.starting_time = time() * 1000.0
+
         # Define variables for AONT
         self.chunk_size = chunk_size
         self.random_size = random_size
+
+        # Define re-encryption variables
+        self.pairing_group = pg.pairing_group_create(const.PAIRING_GROUP_CURVE)
         self.initial_re_encs_num = initial_re_encs_num
         self.re_enc_args = [None for i in range(self.initial_re_encs_num)]
 
@@ -49,6 +52,8 @@ class Abebox(Passthrough):
         self._load_abe_keys(str(Path.home()) + '/.abe_keys')
 
         super(Abebox, self).__init__(root)
+
+    # Utility functions
 
     # Take the time
     def __getattribute__(self,name):
@@ -83,7 +88,6 @@ class Abebox(Passthrough):
         with open(abe_keys_file, 'r') as f:
             data = json.load(f)
 
-        self.pairing_group = pg.pairing_group_create(const.PAIRING_GROUP_CURVE)
         self.abe_pk = {}
         self.abe_sk = {}
         for abe_key_pair in data.keys():
@@ -199,8 +203,6 @@ class Abebox(Passthrough):
             'random_size': self.meta['random_size'],
             're_encs': self.meta['re_encs']
         }
-
-        print('RE ENCS ', self.meta['re_encs'])
 
         for i in range(len(self.meta['re_encs'])):
             # Retrieve public key
@@ -339,15 +341,12 @@ class Abebox(Passthrough):
             self.enc_fp = open(full_path, 'rb+')
 
         self.enc_fp.seek(0, os.SEEK_END)
-        print('FILE SIZE', self.enc_fp.tell())
         file_size = self.enc_fp.tell()
         if file_size <= chunk_num * self.meta['random_size']:
             return
 
         # Move file pointer
         self.enc_fp.seek(chunk_num * self.meta['chunk_size'])
-
-        print('DECODE', self.meta['re_encs'])
 
         # Read file chunk
         chunk = self.enc_fp.read(self.meta['chunk_size'])
@@ -356,11 +355,7 @@ class Abebox(Passthrough):
         if self.debug:
             print("Remove re-encryptions from file chunk")
 
-        print('DECODE', self.meta['re_encs'])
-
         re_enc_ops_num = len(self.meta['re_encs'])
-
-        print(re_enc_ops_num)
 
         re_enc_init_val = self._get_cipher_initial_value(int(chunk_num) * self.meta['chunk_size'])
 
@@ -592,6 +587,7 @@ class Abebox(Passthrough):
                 for prev_chunk_num in range(chunk_num + 1):
                     if str(prev_chunk_num) not in self.file_written_chunks.keys():
                         self.file_written_chunks[str(prev_chunk_num)] = 1
+                        self.file_read_chunks[str(prev_chunk_num)] = 1
 
                         if self.debug:
                             print('Adding chunk #%d to the already written list with value %d'
@@ -628,6 +624,7 @@ class Abebox(Passthrough):
 
                 # Set relative array chunk position as read
                 self.file_written_chunks[str(chunk_num)] = 1
+                self.file_read_chunks[str(chunk_num)] = 1
 
             # Check if chunk is already in the list, otherwise add it and all previous ones not inside the list
             # if str(chunk_num) not in self.file_written_chunks.keys() or not self.file_written_chunks[str(chunk_num)]:
@@ -715,8 +712,6 @@ class Abebox(Passthrough):
                                  range(math.ceil(os.path.getsize(self._full_path(path)) / self.meta['chunk_size']))}
         self.file_written_chunks = {str(i): 0 for i in
                                     range(math.ceil(os.path.getsize(self._full_path(path)) / self.meta['chunk_size']))}
-
-        print('OPEN WRITTEN', self.file_written_chunks)
 
         # Reset file pointers
         self.enc_fp.seek(0)  # TODO PROBABILMENTE NON SERVE
@@ -854,7 +849,7 @@ class Abebox(Passthrough):
                 # If previously applied, re-apply re-encryptions
                 re_enc_transf_enc_chunk = transf_enc_chunk
                 re_enc_init_val = self._get_cipher_initial_value(int(chunk_num) * self.meta['chunk_size'])
-                if len(self.meta['re_encs']) > 0:
+                if re_enc_ops_num:
 
                     if self.debug:
                         print("Re-applying re-encryptions to file chunk")

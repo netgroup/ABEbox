@@ -162,6 +162,7 @@ class Abebox(Passthrough):
         }
 
         if len(enc_meta['re_encs']):
+
             # Retrieve public and secret keys
             re_enc_op = enc_meta['re_encs'][0]
             key_pair_label = re_enc_op['pk']
@@ -483,7 +484,8 @@ class Abebox(Passthrough):
         # Compute file chunks involved in reading process
         starting_aont_chunk_num, ending_aont_chunk_num = self._get_aont_chunks_range(real_len, offset)
 
-        re_enc_op = self.meta['re_encs'][0]
+        if self.meta['re_encs']:
+            re_enc_op = self.meta['re_encs'][0]
 
         # Check if those chunks have already been processed
         for chunk_num in range(starting_aont_chunk_num, ending_aont_chunk_num + 1):
@@ -557,7 +559,8 @@ class Abebox(Passthrough):
         # Compute file chunks involved in reading process
         starting_aont_chunk_num, ending_aont_chunk_num = self._get_aont_chunks_range(offset + len(buf), offset)
 
-        re_enc_op = self.meta['re_encs'][0]
+        if self.meta['re_encs']:
+            re_enc_op = self.meta['re_encs'][0]
 
         # Check if those chunks have already been processed
         for chunk_num in range(starting_aont_chunk_num, ending_aont_chunk_num + 1):

@@ -127,7 +127,7 @@ def encrypt(data=None, pairing_group=None, pk=None, policy=None, debug=0):
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: encrypted data
     """
-    starting_time = time() * 1000.0
+    #starting_time = time() * 1000.0
 
     # Check if data is set
     if data is None:
@@ -155,18 +155,18 @@ def encrypt(data=None, pairing_group=None, pk=None, policy=None, debug=0):
         print('PK = (%s) %s' % (type(pk), pk))
         print('POLICY = (%s) %s' % (type(policy), policy))
 
-    elapsed_time = (time() * 1000.0) - starting_time
-    print('[{}] before CPabe_BSW07'.format(elapsed_time))
+    #elapsed_time = (time() * 1000.0) - starting_time
+    #print('[{}] before CPabe_BSW07'.format(elapsed_time))
     # Encrypt data with CP-ABE
     cpabe = CPabe_BSW07(pairing_group)
 
-    elapsed_time = (time() * 1000.0) - starting_time
-    print('[{}] after Pabe_BSW07'.format(elapsed_time))
+    #elapsed_time = (time() * 1000.0) - starting_time
+    #print('[{}] after Pabe_BSW07'.format(elapsed_time))
 
     enc_data = cpabe.encrypt(pk, data, policy)
 
-    elapsed_time = (time() * 1000.0) - starting_time
-    print('[{}] after cpabe.encrypt'.format(elapsed_time))
+    #elapsed_time = (time() * 1000.0) - starting_time
+    #print('[{}] after cpabe.encrypt'.format(elapsed_time))
 
     if debug:  # ONLY USE FOR DEBUG
         print('ENC DATA WITH POLICY = %s' % enc_data)

@@ -56,19 +56,19 @@ class Abebox(Passthrough):
     # Utility functions
 
     # Take the time
-    def __getattribute__(self,name):
-        attr = object.__getattribute__(self, name)
-        if hasattr(attr, '__call__'):
-            def newfunc(*args, **kwargs):
-                starting_time = time() * 1000.0
-                result = attr(*args, **kwargs)
-                elapsed_time = (time() * 1000.0) - starting_time
-                elapsed_time_from_beginning = (time() * 1000.0) - self.starting_time
-                print('[{}] [{}] done calling {}'.format(elapsed_time_from_beginning, elapsed_time, attr.__name__))
-                return result
-            return newfunc
-        else:
-            return attr
+    # def __getattribute__(self,name):
+    #     attr = object.__getattribute__(self, name)
+    #     if hasattr(attr, '__call__'):
+    #         def newfunc(*args, **kwargs):
+    #             starting_time = time() * 1000.0
+    #             result = attr(*args, **kwargs)
+    #             elapsed_time = (time() * 1000.0) - starting_time
+    #             elapsed_time_from_beginning = (time() * 1000.0) - self.starting_time
+    #             print('[{}] [{}] done calling {}'.format(elapsed_time_from_beginning, elapsed_time, attr.__name__))
+    #             return result
+    #         return newfunc
+    #     else:
+    #         return attr
 
     def _read_in_chunks(self, file_object, chunk_size=128):
         """Lazy function (generator) to read a file piece by piece.

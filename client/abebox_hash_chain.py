@@ -14,6 +14,7 @@ import abe_primitives as abe
 import aont
 import argparse
 import const
+import function_utils as fu
 import hashlib
 import json
 import logging
@@ -48,7 +49,7 @@ class Abebox(Passthrough):
         _, self.last_seed_pg_elem = pg.random_string_gen(self.pairing_group, const.SEED_LENGTH)
         _, self.last_key_pg_elem = pg.sym_key_gen(self.pairing_group, const.SYM_KEY_DEFAULT_SIZE)
         self.root_iv = sym.iv_gen(const.IV_DEFAULT_SIZE)
-        self.re_enc_args = None
+        self.re_enc_args = [None for i in range(self.initial_re_encs_num)]
 
         self.debug = debug
 
@@ -60,19 +61,19 @@ class Abebox(Passthrough):
     # Utility functions
 
     # Take the time
-    def __getattribute__(self,name):
-        attr = object.__getattribute__(self, name)
-        if hasattr(attr, '__call__'):
-            def newfunc(*args, **kwargs):
-                starting_time = time() * 1000.0
-                result = attr(*args, **kwargs)
-                elapsed_time = (time() * 1000.0) - starting_time
-                elapsed_time_from_beginning = (time() * 1000.0) - self.starting_time
-                print('[{}] [{}] done calling {}'.format(elapsed_time_from_beginning, elapsed_time, attr.__name__))
-                return result
-            return newfunc
-        else:
-            return attr
+    # def __getattribute__(self,name):
+    #     attr = object.__getattribute__(self, name)
+    #     if hasattr(attr, '__call__'):
+    #         def newfunc(*args, **kwargs):
+    #             starting_time = time() * 1000.0
+    #             result = attr(*args, **kwargs)
+    #             elapsed_time = (time() * 1000.0) - starting_time
+    #             elapsed_time_from_beginning = (time() * 1000.0) - self.starting_time
+    #             print('[{}] [{}] done calling {}'.format(elapsed_time_from_beginning, elapsed_time, attr.__name__))
+    #             return result
+    #         return newfunc
+    #     else:
+    #         return attr
 
 
     def _read_in_chunks(self, file_object, chunk_size=128):
@@ -241,8 +242,10 @@ class Abebox(Passthrough):
             # Create re-encryption params
             pk = objectToBytes(next(iter(self.abe_pk.values())), self.pairing_group)    # TODO CHANGE FOR REAL USE
             policy = '(DEPT1 and TEAM1)'                                                # TODO CHANGE FOR REAL USE
+            #seed = pg.hash_chain(self.pairing_group, self.last_seed_pg_elem, self.max_re_encs_num - i)
             seed = pg.hash_chain(self.pairing_group, self.last_seed_pg_elem, self.max_re_encs_num - initial_re_encs_num)
             key = pg.hash_chain(self.pairing_group, self.last_key_pg_elem, self.max_re_encs_num - initial_re_encs_num)
+            #key = pg.hash_chain(self.pairing_group, self.last_key_pg_elem, self.max_re_encs_num - i)
             re_enc_length = const.RE_ENC_LENGTH
 
             # Add re-encryption params to metadata file
@@ -257,33 +260,38 @@ class Abebox(Passthrough):
             })
 
 
-    def _create_re_enc_params(self, re_enc_op):
+    def _create_re_enc_params(self, re_enc_index):
         """
         Create a dictionary with all parameters required for re-encryption operations
         """
 
         # Check if already set
-        if not self.re_enc_args:
+        if not self.re_enc_args or not self.re_enc_args[re_enc_index - 1]:
             # Get public and secret keys
             # key_pair_label = re_enc_op['pk']
             # pk = self.abe_pk[key_pair_label]
             # sk = self.abe_sk[key_pair_label]
+            re_enc_op = self.meta['re_encs'][0]
+
+            seed = pg.hash_chain(self.pairing_group, re_enc_op['enc_seed'], re_enc_index)
+            key = pg.hash_chain(self.pairing_group, re_enc_op['enc_key'], re_enc_index)
+            iv = fu.hash_chain(re_enc_op['iv'], re_enc_index)
 
             return {
                 #'pk': pk,
                 #'sk': sk,
                 'pairing_group': self.pairing_group,
-                'seed': hexlify(objectToBytes(re_enc_op['enc_seed'], self.pairing_group)).decode(),
-                'key': hexlify(objectToBytes(re_enc_op['enc_key'], self.pairing_group)).decode(),
+                'seed': hexlify(objectToBytes(seed, self.pairing_group)).decode(),
+                'key': hexlify(objectToBytes(key, self.pairing_group)).decode(),
                 're_enc_length': re_enc_op['re_enc_length'],
-                'iv': hexlify(re_enc_op['iv']).decode(),
+                'iv': hexlify(iv).decode(),
                 #'policy': re_enc_op['policy'],
                 #'init_val': init_val,
-                'last_re_enc_num': re_enc_op['re_encs_num'] - 1,
+                #'last_re_enc_num': re_enc_op['re_encs_num'] - 1,
             }
 
         else:
-            return self.re_enc_args
+            return self.re_enc_args[re_enc_index - 1]
 
 
     def _create_aont_transf_params(self, chunk_bytes_len):
@@ -344,11 +352,11 @@ class Abebox(Passthrough):
 
             for current_re_enc_index in range(re_encs_num - 1, -1, -1):
                 # Add other params to re-encryption params
-                re_enc_args['init_val'] = re_enc_init_val
-                re_enc_args['current_re_enc_num'] = current_re_enc_index
+                re_enc_args[current_re_enc_index]['init_val'] = re_enc_init_val
+                # re_enc_args[current_re_enc_index]['current_re_enc_num'] = current_re_enc_index
 
                 # Remove re-encryption
-                chunk = re_enc.remove_re_enc(chunk, re_enc_args, self.debug)
+                chunk = re_enc.remove_re_enc(chunk, re_enc_args[current_re_enc_index], self.debug)
 
                 if self.debug:
                     print("DE-RE-ENCRYPTED CHUNK = (%d) %s" % (len(chunk), chunk))
@@ -527,7 +535,9 @@ class Abebox(Passthrough):
 
                 # Get re-enc parameters
                 if len(self.meta['re_encs']):
-                    self.re_enc_args = self._create_re_enc_params(re_enc_op)
+                    re_enc_num = self.meta['re_encs'][0]['re_encs_num']
+                    for i in range(re_enc_num):  # if len(self.meta['re_encs']):
+                        self.re_enc_args[i] = self._create_re_enc_params(re_enc_num - i)
 
                 # Anti-transform and decrypt chunk
                 self._decode(full_path, chunk_num, decoded_offset, sym_cipher, self.re_enc_args)
@@ -602,8 +612,12 @@ class Abebox(Passthrough):
                                             self.debug)
 
                 # Get re-enc parameters
+                # if len(self.meta['re_encs']):
+                #     self.re_enc_args = self._create_re_enc_params(re_enc_op)
                 if len(self.meta['re_encs']):
-                    self.re_enc_args = self._create_re_enc_params(re_enc_op)
+                    re_enc_num = self.meta['re_encs'][0]['re_encs_num']
+                    for i in range(re_enc_num):  # if len(self.meta['re_encs']):
+                        self.re_enc_args[i] = self._create_re_enc_params(re_enc_num - i)
 
                 # Anti-transform and decrypt chunk
                 self._decode(full_path, chunk_num, decoded_offset, sym_cipher, self.re_enc_args)
@@ -794,14 +808,14 @@ class Abebox(Passthrough):
                     for current_re_enc_index in range(re_encs_num):
 
                         # Get re-enc parameters
-                        self.re_enc_args = self._create_re_enc_params(re_enc_op)
+                        self.re_enc_args[current_re_enc_index] = self._create_re_enc_params(re_encs_num - current_re_enc_index)
 
                         # Add other params to re-encryption params
-                        self.re_enc_args['init_val'] = re_enc_init_val
-                        self.re_enc_args['current_re_enc_num'] = current_re_enc_index
+                        self.re_enc_args[current_re_enc_index]['init_val'] = re_enc_init_val
+                        # self.re_enc_args[current_re_enc_index]['current_re_enc_num'] = current_re_enc_index
 
                         # Re-encrypt transformed encrypted chunk
-                        re_enc_transf_enc_chunk = re_enc.apply_old_re_enc(re_enc_transf_enc_chunk, self.re_enc_args,
+                        re_enc_transf_enc_chunk = re_enc.apply_old_re_enc(re_enc_transf_enc_chunk, self.re_enc_args[current_re_enc_index],
                                                                           self.debug)
 
                         if self.debug:

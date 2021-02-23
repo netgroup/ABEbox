@@ -6,7 +6,7 @@ import random
 
 class TestFS(unittest.TestCase):
 
-    def XXXtest_create_small(self):
+    def test_create_small(self):
         FILENAME = str(uuid.uuid1())
         write_string = "ciao"
         # test create, write, read
@@ -19,7 +19,7 @@ class TestFS(unittest.TestCase):
         # re-open and read
         with open('mountdir/{}'.format(FILENAME), 'r+') as f:
             read_string = f.read()
-            print("written string: {}\t read string: {}".format(write_string, read_string))
+            #print("written string: {}\t read string: {}".format(write_string, read_string))
             self.assertEqual(read_string, write_string)
         # test append
         with open('mountdir/{}'.format(FILENAME), 'a+') as f:
@@ -31,11 +31,11 @@ class TestFS(unittest.TestCase):
         with open('mountdir/{}'.format(FILENAME), 'r+') as f:
             f.seek(len(write_string), 0)
             read_string = f.read()
-            print("written string: {}\t read string: {}".format(write_string, read_string))
+            #print("written string: {}\t read string: {}".format(write_string, read_string))
             self.assertEqual(read_string, write_string)
 
 
-    def XXXtest_create_big(self):
+    def test_create_big(self):
         """
         Try with bigger file
         """
@@ -50,7 +50,7 @@ class TestFS(unittest.TestCase):
         with open('mountdir/{}'.format(FILENAME), 'r+') as f:
             #f.seek(len(write_string), 0)
             read_string = f.read()
-            print("written string: {}\t read string: {}".format(write_string, read_string))
+            #print("written string: {}\t read string: {}".format(write_string, read_string))
             self.assertEqual(read_string, write_string)
 
 

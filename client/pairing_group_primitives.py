@@ -85,7 +85,7 @@ def random_pairing_group_elem_gen(pairing_group=None, pg_set=GT):
     return pairing_group.random(pg_set)
 
 
-def hash_chain(pairing_group=None, start_pg_elem=None, hops_num=0, cached_hash_chain_elem={}, cached_index=0):
+def hash_chain(pairing_group=None, start_pg_elem=None, hops_num=0, cached_hash_chain_elem={}, to_cache=True):
     """
     Compute the pairing group element after the given number of hops using the hash chain by the given starting pairing
     group element.
@@ -96,11 +96,12 @@ def hash_chain(pairing_group=None, start_pg_elem=None, hops_num=0, cached_hash_c
     """
 
     res_pg_elem = start_pg_elem
-    cached_hash_chain_elem[0] = res_pg_elem
+    if to_cache:
+        cached_hash_chain_elem[0] = res_pg_elem
     print('START PG ELEM', res_pg_elem)
 
     if len(cached_hash_chain_elem) > hops_num:
-        print('CACHED HASH CHAIN #', cached_index, cached_hash_chain_elem[hops_num])
+        print('CACHED HASH CHAIN #', hops_num, cached_hash_chain_elem[hops_num])
         return cached_hash_chain_elem[hops_num]
 
     # Compute the hash chain hops
@@ -109,6 +110,7 @@ def hash_chain(pairing_group=None, start_pg_elem=None, hops_num=0, cached_hash_c
         print('R PG ELEM', r)
         res_pg_elem = res_pg_elem ** r
         print('NEW PG ELEM', res_pg_elem)
-        cached_hash_chain_elem[i + 1] = res_pg_elem
+        if to_cache:
+            cached_hash_chain_elem[i + 1] = res_pg_elem
 
     return res_pg_elem

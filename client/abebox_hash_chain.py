@@ -295,8 +295,8 @@ class Abebox(Passthrough):
             # Create re-encryption params
             pk = objectToBytes(next(iter(self.abe_pk.values())), self.pairing_group)    # TODO CHANGE FOR REAL USE
             policy = '(DEPT1 and TEAM1)'                                                # TODO CHANGE FOR REAL USE
-            seed = pg.hash_chain(self.pairing_group, self.last_seed_pg_elem, self.max_re_encs_num - initial_re_encs_num, self.cached_seeds, initial_re_encs_num - 1)
-            key = pg.hash_chain(self.pairing_group, self.last_key_pg_elem, self.max_re_encs_num - initial_re_encs_num, self.cached_keys, initial_re_encs_num - 1)
+            seed = pg.hash_chain(self.pairing_group, self.last_seed_pg_elem, self.max_re_encs_num - initial_re_encs_num, self.cached_seeds, False)
+            key = pg.hash_chain(self.pairing_group, self.last_key_pg_elem, self.max_re_encs_num - initial_re_encs_num, self.cached_keys, False)
             re_enc_length = const.RE_ENC_LENGTH
 
             # Add re-encryption params to metadata file
@@ -319,8 +319,10 @@ class Abebox(Passthrough):
         :return: re-encryption parameters
         """
 
+        print('RE ENC INDEX', re_enc_index, self.re_enc_args[re_enc_index])
+
         # Check if already set
-        if not self.re_enc_args or not self.re_enc_args[re_enc_index]:
+        if not self.re_enc_args or len(self.re_enc_args) < re_enc_index or not self.re_enc_args[re_enc_index]:
 
             # Get root re-encryption information
             re_enc_op = self.meta['re_encs'][0]
@@ -409,10 +411,12 @@ class Abebox(Passthrough):
             re_enc_op = re_encs_field[0]
             re_encs_num = re_enc_op['re_encs_num']
 
-            for current_re_enc_index in range(re_encs_num - 1, -1, -1):
+            for current_re_enc_index in range(re_encs_num):
                 # Add other params to re-encryption params
                 re_enc_args[current_re_enc_index]['init_val'] = re_enc_init_val
                 # re_enc_args[current_re_enc_index]['current_re_enc_num'] = current_re_enc_index
+
+                print('RE ENC #', current_re_enc_index, self.re_enc_args[current_re_enc_index])
 
                 # Remove re-encryption
                 chunk = re_enc.remove_re_enc(chunk, re_enc_args[current_re_enc_index], self.debug)
@@ -598,6 +602,7 @@ class Abebox(Passthrough):
                     print('READ RE ENC NUM', re_enc_num)
                     for i in range(re_enc_num):  # if len(self.meta['re_encs']):
                         self.re_enc_args[re_enc_num - i - 1] = self._create_re_enc_params(re_enc_num - i - 1)
+                        print('RE ENC #', re_enc_num - i - 1, self.re_enc_args[re_enc_num - i - 1])
 
                 # Anti-transform and decrypt chunk
                 self._decode(full_path, chunk_num, decoded_offset, sym_cipher, self.re_enc_args)
@@ -681,6 +686,7 @@ class Abebox(Passthrough):
                     print('WRITE RE ENC NUM', re_enc_num)
                     for i in range(re_enc_num):  # if len(self.meta['re_encs']):
                         self.re_enc_args[re_enc_num - i - 1] = self._create_re_enc_params(re_enc_num - i - 1)
+                        print('RE ENC #', re_enc_num - i - 1, self.re_enc_args[re_enc_num - i - 1])
 
                 # Anti-transform and decrypt chunk
                 self._decode(full_path, chunk_num, decoded_offset, sym_cipher, self.re_enc_args)
@@ -888,15 +894,20 @@ class Abebox(Passthrough):
 
                     for current_re_enc_index in range(re_encs_num):
 
+                        index = re_encs_num - 1 - current_re_enc_index
+
                         # Get re-enc parameters
-                        self.re_enc_args[current_re_enc_index] = self._create_re_enc_params(2 * re_encs_num - 1 - current_re_enc_index)
+                        self.re_enc_args[index] = self._create_re_enc_params(index)
 
                         # Add other params to re-encryption params
-                        self.re_enc_args[current_re_enc_index]['init_val'] = re_enc_init_val
+                        self.re_enc_args[index]['init_val'] = re_enc_init_val
                         # self.re_enc_args[current_re_enc_index]['current_re_enc_num'] = current_re_enc_index
 
+                        print('RE ENC #', index, self.re_enc_args[index])
+                        print('RE ENC ARGS LIST', self.re_enc_args)
+
                         # Re-encrypt transformed encrypted chunk
-                        re_enc_transf_enc_chunk = re_enc.apply_old_re_enc(re_enc_transf_enc_chunk, self.re_enc_args[current_re_enc_index],
+                        re_enc_transf_enc_chunk = re_enc.apply_old_re_enc(re_enc_transf_enc_chunk, self.re_enc_args[index],
                                                                           self.debug)
 
                         if self.debug:
@@ -996,7 +1007,7 @@ if __name__ == '__main__':
     parser.add_argument('-chunk_size', type=int, help='Chunck size in bytes', default=128)
     parser.add_argument('-random_size', type=int, help='AONT random size in bytes', default=32)
     parser.add_argument('-init_re_encs_num', type=int, help='Number of initial re-encryption operations', default=0)
-    parser.add_argument('-max_re_encs_num', type=int, help='Maximum number of re-encryption operations', default=4)
+    parser.add_argument('-max_re_encs_num', type=int, help='Maximum number of re-encryption operations', default=1024)
     parser.add_argument('--debug', action='store_true', default=False)
     args = parser.parse_args()
 

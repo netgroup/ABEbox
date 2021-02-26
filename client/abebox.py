@@ -554,6 +554,8 @@ class Abebox(Passthrough):
         if self.debug:
             print("reading ", length, " bytes on tmp fs ", self.temp_fp)
 
+        print('READ', time() * 1000.0 - self.starting_time)
+
         return super(Abebox, self).read(path, length, offset, self.temp_fp.fileno())
 
 
@@ -721,6 +723,9 @@ class Abebox(Passthrough):
         # Reset file pointers
         self.enc_fp.seek(0)  # TODO PROBABILMENTE NON SERVE
         self.temp_fp.seek(0)
+
+        print('OPEN', time() * 1000.0 - self.starting_time)
+
         #os.lseek(enc_fp, 0, 0)
         return self.enc_fp.fileno()
         #return self.temp_fp.fileno()
@@ -926,11 +931,10 @@ class Abebox(Passthrough):
         #elapsed_time_from_beginning = (time() * 1000.0) - self.starting_time
         #print('[{}] [{}] ** RELEASE END **'.format(elapsed_time_from_beginning, elapsed_time))
 
-        print(time() * 1000.0 - self.starting_time)
+        print('RELEASE', time() * 1000.0 - self.starting_time)
 
         self.enc_fp.close()
         self.temp_fp.close()
-
 
         return
         # return os.close(fh)

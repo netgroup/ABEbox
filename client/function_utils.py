@@ -145,7 +145,7 @@ def init_logger():
                         datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
 
-def hash_chain(start_elem=None, hops_num=0):
+def hash_chain(start_elem=None, hops_num=0, cached_hash_chain_elem={}):
     """
     Compute the element after the given number of hops using the hash chain by the given starting element.
     :param start_elem: starting element
@@ -153,9 +153,16 @@ def hash_chain(start_elem=None, hops_num=0):
     :return: the resulting element
     """
 
-    # Compute the hash chain hops
     res_elem = start_elem
+    cached_hash_chain_elem[0] = res_elem[: len(start_elem)]
+
+    if len(cached_hash_chain_elem) > hops_num:
+        print('CACHED HASH CHAIN #', hops_num, cached_hash_chain_elem[hops_num])
+        return cached_hash_chain_elem[hops_num]
+
+    # Compute the hash chain hops
     for i in range(hops_num):
-        res_elem = hashlib.sha256(res_elem).digest()
+        res_elem = hashlib.sha256(res_elem).digest()[: len(start_elem)]
+        cached_hash_chain_elem[i + 1] = res_elem[: len(start_elem)]
 
     return res_elem[: len(start_elem)]

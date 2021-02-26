@@ -27,6 +27,7 @@ import sym_enc_primitives as sym
 import tempfile
 
 
+# Define logger
 logging.basicConfig()
 logger = logging.getLogger('fuse')
 logger.info("started")
@@ -34,8 +35,18 @@ logger.info("started")
 
 class Abebox(Passthrough):
 
-    def __init__(self, root, chunk_size=128, random_size=32, initial_re_encs_num=0, max_re_encs_num=100, debug=0):
+    def __init__(self, root, chunk_size=128, random_size=32, initial_re_encs_num=0, max_re_encs_num=1024, debug=0):
+        """
+        Initialise global system parameters
+        :param root: intercepted directory
+        :param chunk_size: chunk size in bytes for AONT operations
+        :param random_size: random part size in bytes for AONT operations
+        :param initial_re_encs_num: number of initial re-encryptions to apply to new files [USED ONLY FOR PERFORMANCE EVALUATION]
+        :param max_re_encs_num: maximum number of permitted re-encryptions [USED FOR REVERSE HASH CHAINING]
+        :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
+        """
 
+        # Define starting time in millis for performance evaluation
         self.starting_time = time() * 1000.0
 
         # Define variables for AONT
@@ -49,8 +60,9 @@ class Abebox(Passthrough):
         _, self.last_seed_pg_elem = pg.random_string_gen(self.pairing_group, const.SEED_LENGTH)
         _, self.last_key_pg_elem = pg.sym_key_gen(self.pairing_group, const.SYM_KEY_DEFAULT_SIZE)
         self.root_iv = sym.iv_gen(const.IV_DEFAULT_SIZE)
-        self.re_enc_args = [None for i in range(self.initial_re_encs_num)]
+        self.re_enc_args = [None for _ in range(self.initial_re_encs_num)]
 
+        # Define debug variable
         self.debug = debug
 
         # Load ABE keys
@@ -77,8 +89,13 @@ class Abebox(Passthrough):
 
 
     def _read_in_chunks(self, file_object, chunk_size=128):
-        """Lazy function (generator) to read a file piece by piece.
-        Default chunk size: 1k."""
+        """
+        Lazy function (generator) to read a file piece by piece
+        :param file_object: file object to read
+        :param chunk_size: size in bytes of the file chunk to read
+        :return: read data
+        """
+
         while True:
             data = file_object.read(chunk_size)
             if not data:
@@ -87,47 +104,63 @@ class Abebox(Passthrough):
 
 
     def _load_abe_keys(self, abe_keys_file):
-        """Load public and private abe keys"""
+        """
+        Load ABE public and secret keys from the given file
+        :param abe_keys_file: file where keys are stored
+        """
 
         if self.debug:
             print("Loading abe keys from " + abe_keys_file)
+
+        # Read file content
         with open(abe_keys_file, 'r') as f:
             data = json.load(f)
 
+        # Retrieve ABE public and secret keys
         self.abe_pk = {}
         self.abe_sk = {}
         for abe_key_pair in data.keys():
             self.abe_pk[abe_key_pair] = bytesToObject(bytes.fromhex(data[abe_key_pair]['pk']), self.pairing_group)
             self.abe_sk[abe_key_pair] = bytesToObject(bytes.fromhex(data[abe_key_pair]['sk']), self.pairing_group)
+
+        # Create CP-ABE cipher
         self.cpabe = CPabe_BSW07(self.pairing_group)
 
 
     def _create_meta(self):
-        """Create meta information about the file with keys
         """
-        # https://jhuisi.github.io/charm/toolbox/symcrypto.html#symcrypto.SymmetricCryptoAbstraction
+        Create meta information about the file with keys
+        :return: created meta information
+        """
+
+        # Get a random element of the pairing group used for symmetric key generation
         el = self.pairing_group.random(GT)
 
+        # Create meta information
         self.meta = {
             'el': el,
             'sym_key': extractor(el),
             'nonce': secrets.token_bytes(8),
-            'policy': '(DEPT1 and TEAM1)',  # hardcoded - TBD
+            'policy': '(DEPT1 and TEAM1)',  # TODO CHANGE FOR REAL USE
             'chunk_size': self.chunk_size,
             'random_size': self.random_size,
             're_encs': []
         }
 
+        # Add re-encryption information
         self._add_initial_re_encs_info(self.initial_re_encs_num)
-        # self.sym_cipher = SymmetricCryptoAbstraction(self.meta['sym_key'])
 
         return self.meta
         
 
     def _load_meta(self, metafile):
-        """Fetch, decrypt and decode the metafile containing keys.
-        Create if it does not exist.
         """
+        Fetch, decrypt and decode the metafile containing keys TODO (create if it does not exist?)
+        :param metafile: metadata file
+        :return: loaded meta information
+        """
+
+        # Read file content
         try:
             if self.debug:
                 print("try to open metafile: " + metafile)
@@ -137,9 +170,14 @@ class Abebox(Passthrough):
             print("Metafile not found")
             # TBD: try to recover?
 
+        # Retrieve encrypted pairing group element information
         enc_el = bytesToObject(bytearray.fromhex(enc_meta['enc_el']), self.pairing_group)
         policy = PolicyParser().parse(enc_meta['policy'])
         enc_el['policy'] = str(policy)
+
+        # Decrypt the pairing group element with CP-ABE
+        el = abe.decrypt(enc_el, next(iter(self.abe_pk.values())), next(iter(self.abe_sk.values())), self.pairing_group,
+                         self.debug)
 
         if self.debug:
             print("decrypt")
@@ -147,24 +185,21 @@ class Abebox(Passthrough):
             print("sk: ", next(iter(self.abe_sk.values())))
             print("policy: ", enc_el['policy'])
 
-        # Decrypt the group element with CP-ABE
-        el = abe.decrypt(enc_el, next(iter(self.abe_pk.values())), next(iter(self.abe_sk.values())), self.pairing_group,
-                         self.debug)
-
         # Load all in clear
         self.meta = {
             'el': el,
             'sym_key': extractor(el),
             'nonce': bytearray.fromhex(enc_meta['nonce']),
-            'policy': enc_meta['policy'],  # '(DEPT1 and TEAM1)', # hardcoded - TBD
+            'policy': enc_meta['policy'],
             'chunk_size': enc_meta['chunk_size'],
             'random_size': enc_meta['random_size'],
             're_encs': enc_meta['re_encs']
         }
 
+        # Check if there is re-encryption information
         if len(enc_meta['re_encs']):
 
-            # Retrieve public and secret keys
+            # Retrieve re-encryption public and secret keys
             re_enc_op = enc_meta['re_encs'][0]
             key_pair_label = re_enc_op['pk']
             pk = self.abe_pk[key_pair_label]
@@ -180,28 +215,29 @@ class Abebox(Passthrough):
             enc_key['policy'] = re_enc_op['policy']
             key = abe.decrypt(enc_key, pk, sk, self.pairing_group, self.debug)
 
-            # Add decrypted seed and key
+            # Add decrypted seed and key, and IV
             self.meta['re_encs'][0]['enc_seed'] = seed
             self.meta['re_encs'][0]['enc_key'] = key
             self.meta['re_encs'][0]['iv'] = unhexlify(re_enc_op['iv'])
-
-        # create a symmetric cypher
-        # self.sym_cipher = SymmetricCryptoAbstraction(self.meta['sym_key'])
 
         return self.meta
 
 
     def _dump_meta(self, metafile):
-        """Dump the meta information on the meta file
         """
+        Dump the meta information on the metafile
+        :param metafile: file where meta information will be saved
+        :return: encrypted meta information
+        """
+
         if self.debug:
             print("dumping metadata on file ", metafile)
 
-        # we need to handle separately enc_el (charm.toolbox.node.BinNode) as there is no serializer
+        # Encrypt symmetric key pairing group element with CP-ABE
         enc_el = abe.encrypt(self.meta['el'], self.pairing_group, next(iter(self.abe_pk.values())), self.meta['policy'],
                              self.debug)
 
-        # write encrypted data
+        # Prepare encrypted data
         enc_meta = {
             'policy': self.meta['policy'],
             'nonce': self.meta['nonce'].hex(),
@@ -211,8 +247,10 @@ class Abebox(Passthrough):
             're_encs': self.meta['re_encs']
         }
 
+        # Check if there is re-encryption information
         if len(enc_meta['re_encs']):
-            # Retrieve public key
+
+            # Retrieve ABE public key
             re_enc_op = enc_meta['re_encs'][0]
             key_pair_label = re_enc_op['pk']
             pk = self.abe_pk[key_pair_label]
@@ -225,10 +263,12 @@ class Abebox(Passthrough):
             enc_key = objectToBytes(abe.encrypt(re_enc_op['enc_key'], self.pairing_group, pk, re_enc_op['policy'],
                                                 self.debug), self.pairing_group)
 
+            # Add re-encryption information to encrypted meta information
             enc_meta['re_encs'][0]['enc_seed'] = hexlify(enc_seed).decode()
             enc_meta['re_encs'][0]['enc_key'] = hexlify(enc_key).decode()
             enc_meta['re_encs'][0]['iv'] = hexlify(re_enc_op['iv']).decode()
 
+        # Write encrypted information
         with open(metafile, 'w') as f:
             json.dump(enc_meta, f)
 
@@ -236,16 +276,19 @@ class Abebox(Passthrough):
 
 
     def _add_initial_re_encs_info(self, initial_re_encs_num=0):
+        """
+        Add initial re-encryption information to meta information
+        :param initial_re_encs_num: number of re-encryptions that will be initially applied to new files
+        """
 
-        # Add information about initial re-encryptions to apply to metadata file
+        # Add information about initial re-encryptions to apply to metafile
         if initial_re_encs_num > 0:
+
             # Create re-encryption params
             pk = objectToBytes(next(iter(self.abe_pk.values())), self.pairing_group)    # TODO CHANGE FOR REAL USE
             policy = '(DEPT1 and TEAM1)'                                                # TODO CHANGE FOR REAL USE
-            #seed = pg.hash_chain(self.pairing_group, self.last_seed_pg_elem, self.max_re_encs_num - i)
             seed = pg.hash_chain(self.pairing_group, self.last_seed_pg_elem, self.max_re_encs_num - initial_re_encs_num)
             key = pg.hash_chain(self.pairing_group, self.last_key_pg_elem, self.max_re_encs_num - initial_re_encs_num)
-            #key = pg.hash_chain(self.pairing_group, self.last_key_pg_elem, self.max_re_encs_num - i)
             re_enc_length = const.RE_ENC_LENGTH
 
             # Add re-encryption params to metadata file
@@ -262,41 +305,41 @@ class Abebox(Passthrough):
 
     def _create_re_enc_params(self, re_enc_index):
         """
-        Create a dictionary with all parameters required for re-encryption operations
+        Create a dictionary with all parameters required for re-encryption operations, if it does not exist; otherwise,
+        return the already existing one
+        :param re_enc_index: re-encryption index in re-encryptions list
+        :return: re-encryption parameters
         """
 
         # Check if already set
         if not self.re_enc_args or not self.re_enc_args[re_enc_index - 1]:
-            # Get public and secret keys
-            # key_pair_label = re_enc_op['pk']
-            # pk = self.abe_pk[key_pair_label]
-            # sk = self.abe_sk[key_pair_label]
+
+            # Get root re-encryption information
             re_enc_op = self.meta['re_encs'][0]
 
+            # Derive current seed, key and IV
             seed = pg.hash_chain(self.pairing_group, re_enc_op['enc_seed'], re_enc_index)
             key = pg.hash_chain(self.pairing_group, re_enc_op['enc_key'], re_enc_index)
             iv = fu.hash_chain(re_enc_op['iv'], re_enc_index)
 
             return {
-                #'pk': pk,
-                #'sk': sk,
                 'pairing_group': self.pairing_group,
                 'seed': hexlify(objectToBytes(seed, self.pairing_group)).decode(),
                 'key': hexlify(objectToBytes(key, self.pairing_group)).decode(),
                 're_enc_length': re_enc_op['re_enc_length'],
                 'iv': hexlify(iv).decode(),
-                #'policy': re_enc_op['policy'],
-                #'init_val': init_val,
-                #'last_re_enc_num': re_enc_op['re_encs_num'] - 1,
             }
 
         else:
+
             return self.re_enc_args[re_enc_index - 1]
 
 
     def _create_aont_transf_params(self, chunk_bytes_len):
         """
         Create a dictionary with all parameters required for AONT transformation
+        :param chunk_bytes_len: chunk length in bytes
+        :return: AONT transformation parameters
         """
 
         return {
@@ -308,6 +351,8 @@ class Abebox(Passthrough):
     def _create_aont_anti_transf_params(self, chunk_bytes_len):
         """
         Create a dictionary with all parameters required for AONT anti-transformation
+        :param chunk_bytes_len: chunk length in bytes
+        :return: AONT anti-transformation parameters
         """
 
         return {
@@ -633,6 +678,8 @@ class Abebox(Passthrough):
 
     def open(self, path, flags):
 
+        self.starting_time = time() * 1000.0
+
         if self.debug:
             print("Opening file ", path)
 
@@ -675,6 +722,9 @@ class Abebox(Passthrough):
         self.file_written_chunks = {str(i): 0 for i in
                                     range(math.ceil(os.path.getsize(self._full_path(path)) / self.meta['chunk_size']))}
 
+        if self.meta['re_encs']:
+            self.re_enc_args = [None for i in range(self.meta['re_encs'][0]['re_encs_num'])]
+
         # Reset file pointers
         self.enc_fp.seek(0)  # TODO PROBABILMENTE NON SERVE
         self.temp_fp.seek(0)
@@ -685,6 +735,8 @@ class Abebox(Passthrough):
 
 
     def create(self, path, mode, fi=None):
+
+        self.starting_time = time() * 1000.0
 
         if self.debug:
             print("Creating file ", path)
@@ -863,6 +915,8 @@ class Abebox(Passthrough):
         if sum(self.file_written_chunks.values()):
             self._dump_meta(meta_directory + self.filename)
 
+        print(time() * 1000.0 - self.starting_time)
+
         self.enc_fp.close()
         self.temp_fp.close()
 
@@ -913,7 +967,7 @@ if __name__ == '__main__':
     parser.add_argument('-chunk_size', type=int, help='Chunck size in bytes', default=128)
     parser.add_argument('-random_size', type=int, help='AONT random size in bytes', default=32)
     parser.add_argument('-init_re_encs_num', type=int, help='Number of initial re-encryption operations', default=0)
-    parser.add_argument('-max_re_encs_num', type=int, help='Maximum number of re-encryption operations', default=100)
+    parser.add_argument('-max_re_encs_num', type=int, help='Maximum number of re-encryption operations', default=1024)
     parser.add_argument('--debug', action='store_true', default=False)
     args = parser.parse_args()
 

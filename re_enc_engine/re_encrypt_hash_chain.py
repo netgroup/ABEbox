@@ -222,7 +222,7 @@ if __name__ == '__main__':
     last_key = pg.random_pairing_group_elem_gen(pair_group, GT)
     max_re_enc_num = 100
 
-    initial_re_encs = 3
+    initial_re_encs = 1
     for i in range(initial_re_encs):
         print('\nHASH CHAIN HOPS =', i, '\t REV HASH CHAIN HOPS =', max_re_enc_num - i)
         re_enc_args = {

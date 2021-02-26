@@ -44,7 +44,7 @@ class Abebox(Passthrough):
         # Define re-encryption variables
         self.pairing_group = pg.pairing_group_create(const.PAIRING_GROUP_CURVE)
         self.initial_re_encs_num = initial_re_encs_num
-        self.re_enc_args = [None for i in range(self.initial_re_encs_num)]
+        self.re_enc_args = [None for _ in range(self.initial_re_encs_num)]
 
         self.debug = debug
 
@@ -671,6 +671,8 @@ class Abebox(Passthrough):
 
     def open(self, path, flags):
 
+        self.starting_time = time() * 1000.0
+
         if self.debug:
             print("Opening file ", path)
 
@@ -713,6 +715,9 @@ class Abebox(Passthrough):
         self.file_written_chunks = {str(i): 0 for i in
                                     range(math.ceil(os.path.getsize(self._full_path(path)) / self.meta['chunk_size']))}
 
+        if self.meta['re_encs']:
+            self.re_enc_args = [None for i in range(len(self.meta['re_encs']))]
+
         # Reset file pointers
         self.enc_fp.seek(0)  # TODO PROBABILMENTE NON SERVE
         self.temp_fp.seek(0)
@@ -723,6 +728,8 @@ class Abebox(Passthrough):
 
 
     def create(self, path, mode, fi=None):
+
+        self.starting_time = time() * 1000.0
 
         if self.debug:
             print("Creating file ", path)
@@ -918,6 +925,8 @@ class Abebox(Passthrough):
         #elapsed_time = (time() * 1000.0) - starting_time
         #elapsed_time_from_beginning = (time() * 1000.0) - self.starting_time
         #print('[{}] [{}] ** RELEASE END **'.format(elapsed_time_from_beginning, elapsed_time))
+
+        print(time() * 1000.0 - self.starting_time)
 
         self.enc_fp.close()
         self.temp_fp.close()

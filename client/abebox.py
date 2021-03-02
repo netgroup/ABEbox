@@ -554,7 +554,7 @@ class Abebox(Passthrough):
         if self.debug:
             print("reading ", length, " bytes on tmp fs ", self.temp_fp)
 
-        print('READ', time() * 1000.0 - self.starting_time)
+        #print('READ', time() * 1000.0 - self.starting_time)
 
         return super(Abebox, self).read(path, length, offset, self.temp_fp.fileno())
 
@@ -673,7 +673,7 @@ class Abebox(Passthrough):
 
     def open(self, path, flags):
 
-        self.starting_time = time() * 1000.0
+        #self.starting_time = time() * 1000.0
 
         if self.debug:
             print("Opening file ", path)
@@ -724,7 +724,7 @@ class Abebox(Passthrough):
         self.enc_fp.seek(0)  # TODO PROBABILMENTE NON SERVE
         self.temp_fp.seek(0)
 
-        print('OPEN', time() * 1000.0 - self.starting_time)
+        #print('OPEN', time() * 1000.0 - self.starting_time)
 
         #os.lseek(enc_fp, 0, 0)
         return self.enc_fp.fileno()
@@ -734,7 +734,7 @@ class Abebox(Passthrough):
 
     def create(self, path, mode, fi=None):
 
-        self.starting_time = time() * 1000.0
+        #self.starting_time = time() * 1000.0
 
         if self.debug:
             print("Creating file ", path)
@@ -760,6 +760,9 @@ class Abebox(Passthrough):
 
         self._create_meta()
 
+        if self.meta['re_encs']:
+            self.re_enc_args = [None for i in range(len(self.meta['re_encs']))]
+
         # return self.temp_fp.fileno()
         # return super(Abebox, self).create(path, mode, fi)
         full_path = self._full_path(path)
@@ -770,7 +773,7 @@ class Abebox(Passthrough):
 
     def release(self, path, fh):
 
-        #starting_time = time() * 1000.0
+        #self.starting_time = time() * 1000.0
 
         if self.debug:
             print("Releasing file ", path)
@@ -931,7 +934,7 @@ class Abebox(Passthrough):
         #elapsed_time_from_beginning = (time() * 1000.0) - self.starting_time
         #print('[{}] [{}] ** RELEASE END **'.format(elapsed_time_from_beginning, elapsed_time))
 
-        print('RELEASE', time() * 1000.0 - self.starting_time)
+        #print('RELEASE', time() * 1000.0 - self.starting_time)
 
         self.enc_fp.close()
         self.temp_fp.close()

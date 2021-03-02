@@ -157,7 +157,7 @@ def hash_chain(start_elem=None, hops_num=0, cached_hash_chain_elem={}):
     cached_hash_chain_elem[0] = res_elem[: len(start_elem)]
 
     if len(cached_hash_chain_elem) > hops_num:
-        print('CACHED HASH CHAIN #', hops_num, cached_hash_chain_elem[hops_num])
+        #print('CACHED HASH CHAIN #', hops_num, cached_hash_chain_elem[hops_num])
         return cached_hash_chain_elem[hops_num]
 
     # Compute the hash chain hops

@@ -98,18 +98,18 @@ def hash_chain(pairing_group=None, start_pg_elem=None, hops_num=0, cached_hash_c
     res_pg_elem = start_pg_elem
     if to_cache:
         cached_hash_chain_elem[0] = res_pg_elem
-    print('START PG ELEM', res_pg_elem)
+    #print('START PG ELEM', res_pg_elem)
 
     if len(cached_hash_chain_elem) > hops_num:
-        print('CACHED HASH CHAIN #', hops_num, cached_hash_chain_elem[hops_num])
+        #print('CACHED HASH CHAIN #', hops_num, cached_hash_chain_elem[hops_num])
         return cached_hash_chain_elem[hops_num]
 
     # Compute the hash chain hops
     for i in range(hops_num):
         r = pairing_group.init(ZR, int(hashPair(res_pg_elem).decode('utf-8'), 16))
-        print('R PG ELEM', r)
+        #print('R PG ELEM', r)
         res_pg_elem = res_pg_elem ** r
-        print('NEW PG ELEM', res_pg_elem)
+        #print('NEW PG ELEM', res_pg_elem)
         if to_cache:
             cached_hash_chain_elem[i + 1] = res_pg_elem
 

@@ -205,7 +205,7 @@ class Abebox(Passthrough):
             pk = self.abe_pk[key_pair_label]
             sk = self.abe_sk[key_pair_label]
 
-            print('LOAD META PRE ABE', re_enc_op)
+            #print('LOAD META PRE ABE', re_enc_op)
 
             # Decrypt seed
             enc_seed = bytesToObject(unhexlify(re_enc_op['enc_seed']), self.pairing_group)
@@ -222,7 +222,7 @@ class Abebox(Passthrough):
             self.meta['re_encs'][0]['enc_key'] = key
             self.meta['re_encs'][0]['iv'] = unhexlify(re_enc_op['iv'])
 
-            print('LOAD META POST ABE', self.meta['re_encs'][0])
+            #print('LOAD META POST ABE', self.meta['re_encs'][0])
 
         return self.meta
 
@@ -259,7 +259,7 @@ class Abebox(Passthrough):
             key_pair_label = re_enc_op['pk']
             pk = self.abe_pk[key_pair_label]
 
-            print('DUMP ENC META PRE ABE', re_enc_op)
+            #print('DUMP ENC META PRE ABE', re_enc_op)
 
             # Encrypt seed
             enc_seed = objectToBytes(abe.encrypt(re_enc_op['enc_seed'], self.pairing_group, pk, re_enc_op['policy'],
@@ -274,7 +274,7 @@ class Abebox(Passthrough):
             enc_meta['re_encs'][0]['enc_key'] = hexlify(enc_key).decode()
             enc_meta['re_encs'][0]['iv'] = hexlify(re_enc_op['iv']).decode()
 
-            print('DUMP ENC META POST ABE', enc_meta['re_encs'][0])
+            #print('DUMP ENC META POST ABE', enc_meta['re_encs'][0])
 
         # Write encrypted information
         with open(metafile, 'w') as f:
@@ -319,7 +319,7 @@ class Abebox(Passthrough):
         :return: re-encryption parameters
         """
 
-        print('RE ENC INDEX', re_enc_index, self.re_enc_args[re_enc_index])
+        #print('RE ENC INDEX', re_enc_index, self.re_enc_args[re_enc_index])
 
         # Check if already set
         if not self.re_enc_args or len(self.re_enc_args) < re_enc_index or not self.re_enc_args[re_enc_index]:
@@ -327,16 +327,16 @@ class Abebox(Passthrough):
             # Get root re-encryption information
             re_enc_op = self.meta['re_encs'][0]
 
-            print('RE ENC OP', re_enc_op)
+            #print('RE ENC OP', re_enc_op)
 
             # Derive current seed, key and IV
             seed = pg.hash_chain(self.pairing_group, re_enc_op['enc_seed'], re_enc_index, self.cached_seeds)
             key = pg.hash_chain(self.pairing_group, re_enc_op['enc_key'], re_enc_index, self.cached_keys)
             iv = fu.hash_chain(re_enc_op['iv'], re_enc_index, self.cached_ivs)
 
-            print('SEED', hexlify(objectToBytes(seed, self.pairing_group)).decode())
-            print('KEY', hexlify(objectToBytes(key, self.pairing_group)).decode())
-            print('IV', hexlify(iv).decode())
+            #print('SEED', hexlify(objectToBytes(seed, self.pairing_group)).decode())
+            #print('KEY', hexlify(objectToBytes(key, self.pairing_group)).decode())
+            #print('IV', hexlify(iv).decode())
 
             return {
                 'pairing_group': self.pairing_group,
@@ -416,7 +416,7 @@ class Abebox(Passthrough):
                 re_enc_args[current_re_enc_index]['init_val'] = re_enc_init_val
                 # re_enc_args[current_re_enc_index]['current_re_enc_num'] = current_re_enc_index
 
-                print('RE ENC #', current_re_enc_index, self.re_enc_args[current_re_enc_index])
+                #print('RE ENC #', current_re_enc_index, self.re_enc_args[current_re_enc_index])
 
                 # Remove re-encryption
                 chunk = re_enc.remove_re_enc(chunk, re_enc_args[current_re_enc_index], self.debug)
@@ -535,6 +535,8 @@ class Abebox(Passthrough):
 
     def read(self, path, length, offset, fh):
 
+        #self.starting_time = time() * 1000.0
+
         # self.enc_fp.close()
         # self.enc_fp = open(self._full_path(path), 'rb')
 
@@ -599,10 +601,11 @@ class Abebox(Passthrough):
                 # Get re-enc parameters
                 if len(self.meta['re_encs']):
                     re_enc_num = self.meta['re_encs'][0]['re_encs_num']
-                    print('READ RE ENC NUM', re_enc_num)
+                    #print('READ RE ENC NUM', re_enc_num)
                     for i in range(re_enc_num):  # if len(self.meta['re_encs']):
                         self.re_enc_args[re_enc_num - i - 1] = self._create_re_enc_params(re_enc_num - i - 1)
-                        print('RE ENC #', re_enc_num - i - 1, self.re_enc_args[re_enc_num - i - 1])
+                        assert(len(self.cached_seeds) >= re_enc_num or chunk_num == 0)
+                        #print('RE ENC #', re_enc_num - i - 1, self.re_enc_args[re_enc_num - i - 1])
 
                 # Anti-transform and decrypt chunk
                 self._decode(full_path, chunk_num, decoded_offset, sym_cipher, self.re_enc_args)
@@ -613,7 +616,7 @@ class Abebox(Passthrough):
         if self.debug:
             print("reading ", length, " bytes on tmp fs ", self.temp_fp)
 
-        print('READ', time() * 1000.0 - self.starting_time)
+        #print('READ', time() * 1000.0 - self.starting_time)
 
         return super(Abebox, self).read(path, length, offset, self.temp_fp.fileno())
 
@@ -683,10 +686,10 @@ class Abebox(Passthrough):
                 #     self.re_enc_args = self._create_re_enc_params(re_enc_op)
                 if len(self.meta['re_encs']):
                     re_enc_num = self.meta['re_encs'][0]['re_encs_num']
-                    print('WRITE RE ENC NUM', re_enc_num)
+                    #print('WRITE RE ENC NUM', re_enc_num)
                     for i in range(re_enc_num):  # if len(self.meta['re_encs']):
                         self.re_enc_args[re_enc_num - i - 1] = self._create_re_enc_params(re_enc_num - i - 1)
-                        print('RE ENC #', re_enc_num - i - 1, self.re_enc_args[re_enc_num - i - 1])
+                        #print('RE ENC #', re_enc_num - i - 1, self.re_enc_args[re_enc_num - i - 1])
 
                 # Anti-transform and decrypt chunk
                 self._decode(full_path, chunk_num, decoded_offset, sym_cipher, self.re_enc_args)
@@ -702,7 +705,7 @@ class Abebox(Passthrough):
 
     def open(self, path, flags):
 
-        self.starting_time = time() * 1000.0
+        #self.starting_time = time() * 1000.0
 
         if self.debug:
             print("Opening file ", path)
@@ -756,7 +759,7 @@ class Abebox(Passthrough):
         self.enc_fp.seek(0)  # TODO PROBABILMENTE NON SERVE
         self.temp_fp.seek(0)
 
-        print('OPEN', time() * 1000.0 - self.starting_time)
+        #print('OPEN', time() * 1000.0 - self.starting_time)
 
         #os.lseek(enc_fp, 0, 0)
         return self.enc_fp.fileno()
@@ -766,7 +769,7 @@ class Abebox(Passthrough):
 
     def create(self, path, mode, fi=None):
 
-        self.starting_time = time() * 1000.0
+        #self.starting_time = time() * 1000.0
 
         if self.debug:
             print("Creating file ", path)
@@ -795,6 +798,9 @@ class Abebox(Passthrough):
 
         self._create_meta()
 
+        if self.meta['re_encs']:
+            self.re_enc_args = [None for i in range(self.meta['re_encs'][0]['re_encs_num'])]
+
         # return self.temp_fp.fileno()
         # return super(Abebox, self).create(path, mode, fi)
         full_path = self._full_path(path)
@@ -804,6 +810,8 @@ class Abebox(Passthrough):
 
 
     def release(self, path, fh):
+
+        #self.starting_time = time() * 1000.0
 
         if self.debug:
             print("Releasing file ", path)
@@ -890,7 +898,7 @@ class Abebox(Passthrough):
                     re_enc_op = re_encs_field[0]
                     re_encs_num = re_enc_op['re_encs_num']
 
-                    print('RELEASE RE ENC NUM', re_encs_num)
+                    #print('RELEASE RE ENC NUM', re_encs_num)
 
                     for current_re_enc_index in range(re_encs_num):
 
@@ -903,8 +911,8 @@ class Abebox(Passthrough):
                         self.re_enc_args[index]['init_val'] = re_enc_init_val
                         # self.re_enc_args[current_re_enc_index]['current_re_enc_num'] = current_re_enc_index
 
-                        print('RE ENC #', index, self.re_enc_args[index])
-                        print('RE ENC ARGS LIST', self.re_enc_args)
+                        #print('RE ENC #', index, self.re_enc_args[index])
+                        #print('RE ENC ARGS LIST', self.re_enc_args)
 
                         # Re-encrypt transformed encrypted chunk
                         re_enc_transf_enc_chunk = re_enc.apply_old_re_enc(re_enc_transf_enc_chunk, self.re_enc_args[index],
@@ -955,7 +963,7 @@ class Abebox(Passthrough):
         if sum(self.file_written_chunks.values()):
             self._dump_meta(meta_directory + self.filename)
 
-        print('RELEASE', time() * 1000.0 - self.starting_time)
+        #print('RELEASE', time() * 1000.0 - self.starting_time)
 
         self.enc_fp.close()
         self.temp_fp.close()

@@ -48,7 +48,7 @@ def main():
     #print(json.dumps(data))
 
     ######
-    abe_keys_file = str(Path.home()) + '/.abe_keys'
+    abe_keys_file = str(Path.home()) + '/.abe_keys.json'
 
     answer = input("Should I write them on your " + abe_keys_file + "[Y/N]? ").lower()
     if answer == 'y':

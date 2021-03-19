@@ -66,7 +66,7 @@ class Abebox(Passthrough):
         self.debug = debug
 
         # Load ABE keys
-        self._load_abe_keys(str(Path.home()) + '/.abe_keys')
+        self._load_abe_keys(str(Path.home()) + '/.abe_keys.json')
 
         super(Abebox, self).__init__(root)
 

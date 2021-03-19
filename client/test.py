@@ -15,6 +15,37 @@ from charm.toolbox.policytree import PolicyParser
 
 if __name__ == '__main__':
 
+    re_enc_num = [0, 1, 3, 5, 10, 30, 50, 100, 300, 500]
+
+    output_file = 'results/resHPRE.csv'
+
+    for i in re_enc_num:
+
+        filename = 'results/2017/res' + str(i)
+
+        with(open(filename, 'r')) as fin:
+
+            lines = fin.readlines()
+
+        total = sum(float(line[:-1].replace(',', '.')) for line in lines[1: -1])
+
+        with(open(output_file, 'a')) as fout:
+
+            fout.write(str(i) + ',' + "{:.3f}".format(total / (len(lines) - 2)) + '\n')
+
+
+
+
+
+
+
+
+
+
+
+
+    exit(0)
+
     write_string = os.urandom(1024*1024*2)
     write_string = ''.join(random.choices(string.ascii_uppercase + string.digits, k=1000000*2))
     with(open('long_test_file', 'w')) as f:

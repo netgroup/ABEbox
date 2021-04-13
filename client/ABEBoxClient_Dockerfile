@@ -1,0 +1,19 @@
+FROM ubuntu:18.04
+MAINTAINER support@charm-crypto.com
+
+RUN apt update && apt upgrade -y && apt install --yes build-essential flex bison wget subversion m4 python3.8 python3-dev python3-setuptools python3-pip libgmp-dev libssl-dev libfuse-dev git libsasl2-dev libldap2-dev
+RUN wget https://crypto.stanford.edu/pbc/files/pbc-0.5.14.tar.gz && tar xvf pbc-0.5.14.tar.gz && cd /pbc-0.5.14 && ./configure LDFLAGS="-lgmp" && make && make install && ldconfig
+RUN cd /
+RUN rm pbc-0.5.14.tar.gz
+RUN git clone https://github.com/JHUISI/charm
+RUN cd /charm && ./configure.sh && make && make install && ldconfig
+
+WORKDIR /home/ABEBoxClient
+COPY abe_primitives.py abebox.py aont.py const.py create_abe_msk.py function_utils.py pairing_group_primitives.py passthrough.py abebox_re_enc_handler.py re_enc_primitives.py README.md requirements sym_enc_primitives.py ./
+RUN pip3 install --upgrade pip
+RUN pip3 install -r requirements
+RUN mkdir mountdir
+RUN mkdir basedir
+# RUN python3 create_abe_msk.py -y
+# CMD python3 abebox_hash_chain.py basedir/ mountdir/
+CMD /bin/bash

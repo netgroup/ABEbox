@@ -1,6 +1,6 @@
 # ABEBox Client
 The ABEBox Client is the component that needs to be installed on user devices. It takes care of all the operations 
-related to the protection of data contents. It uses the *FUSE* library by making transparent to the user all the 
+related to the protection of data content. It uses the *FUSE* library by making transparent to the user all the 
 underling processes and leaving him/her only the operations related to the access policies to apply to data that needs 
 to be protected.
 Policies are the same ones defined in ABE, so they are monotonic boolean expressions consisting of *AND*, *OR* and 
@@ -47,19 +47,24 @@ After the building procedure, you can run the Docker container by executing the 
 
 ## Run
 Before running ABEBox Client, you should create a local directory where the Client will temporary store data in clear 
-form, before protect and save it inside the destination directory.
+form, before protect and save it inside the destination directory (the Docker container automatically creates a 
+directory called *mountdir*).
 
-Next you have to generate ABE keys locally running the following command
+Next, for testing purposes, you have to generate ABE keys locally running the following command
 > python3 create_abe_msk.py -y
 
 Finally, you can now start the ABEBox Client by simply running the following command
 > python3 abebox.py basedir mountdir
 
 where *basedir* is the destination folder where protected data is stored and *mountdir* is the previously created folder
-with temporary data in clear form (the Docker container automatically creates them).
+with temporary data in clear form.
+All you have to do now is to create new files in the mountdir and they will be automatically stored in a protected form 
+on the basedir. Once created, a file can be edited at any time and changes will be automatically applied to the 
+protected file.
 
 To test the Client, you need to use two shell windows because when you run the command the current shell will remain 
-pending.
+pending. Both *create_abe_msk.py* and *abebox.py* can be executed with various flags you can see by running each command 
+with the tag *--help*.
 
 ## Issues
 To stop ABEBox Client, you just need to press *Ctrl+C*. If any error occurs during next executions, you may have to 

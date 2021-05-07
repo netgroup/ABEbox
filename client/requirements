@@ -1,6 +1,6 @@
+wheel
 pyOpenSSL
 python-ldap
 fusepy
-secrets
+#secrets
 pycryptodome
-

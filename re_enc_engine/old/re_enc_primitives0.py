@@ -2,15 +2,13 @@
 This file contains all the primitives for the Puncturing Encryption of the re-encryption process.
 """
 
-from Crypto.Cipher import AES
-
 import const
 import logging
 import random                       # [WARNING] NOT CRYPTOGRAPHICALLY SECURE
 import sym_enc_primitives as sym
 
 
-def re_encrypt(data=None, re_enc_length=const.RE_ENC_LENGTH, seed=None, key=None, iv=None, init_val=None, debug=0):
+def re_encrypt(data=None, re_enc_length=const.RE_ENC_LENGTH, seed=None, key=None, iv=None, debug=0):
     """
     Re-encrypt data using the given parameters.
     :param data: data to re-encrypt
@@ -18,7 +16,6 @@ def re_encrypt(data=None, re_enc_length=const.RE_ENC_LENGTH, seed=None, key=None
     :param seed: seed to randomly select bytes to re-encrypt
     :param key: symmetric key to encrypt randomly selected bytes
     :param iv: initialisation vector for the symmetric encryption
-    :param init_val: initial value (ONLY FOR CTR MODE)
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: re-encrypted data
     """
@@ -47,15 +44,14 @@ def re_encrypt(data=None, re_enc_length=const.RE_ENC_LENGTH, seed=None, key=None
     # Check if the number of bytes to re-encrypt is lesser than the data length
     if re_enc_length < len(data):  # Apply punctured encryption
 
-        return apply_punctured_enc(data, re_enc_length, seed, key, iv, init_val, debug)
+        return apply_punctured_enc(data, re_enc_length, seed, key, iv, debug)
 
     else:  # Re-encryption of the whole data
 
-        sym_cipher = sym.get_cipher(AES.MODE_CTR, init_val, None, key, iv)
-        return sym.encrypt(sym_cipher, data, debug)
+        return sym.encrypt(key, iv, data, debug)
 
 
-def re_decrypt(data=None, re_enc_length=const.RE_ENC_LENGTH, seed=None, key=None, iv=None, init_val=None, debug=0):
+def re_decrypt(data=None, re_enc_length=const.RE_ENC_LENGTH, seed=None, key=None, iv=None, debug=0):
     """
     Re-decrypt data using the given parameters.
     :param data: data to re-decrypt
@@ -63,7 +59,6 @@ def re_decrypt(data=None, re_enc_length=const.RE_ENC_LENGTH, seed=None, key=None
     :param seed: seed that randomly selected re-encrypted bytes
     :param key: symmetric key to decrypt randomly selected bytes
     :param iv: initialisation vector for the symmetric decryption
-    :param init_val: initial value (ONLY FOR CTR MODE)
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: re-decrypted data
     """
@@ -92,15 +87,14 @@ def re_decrypt(data=None, re_enc_length=const.RE_ENC_LENGTH, seed=None, key=None
     # Check if the number of bytes to re-encrypt is lesser than the data length
     if re_enc_length < len(data):  # Apply punctured encryption
 
-        return remove_punctured_enc(data, re_enc_length, seed, key, iv, init_val, debug)
+        return remove_punctured_enc(data, re_enc_length, seed, key, iv, debug)
 
     else:  # Re-encryption of the whole data
 
-        sym_cipher = sym.get_cipher(AES.MODE_CTR, init_val, None, key, iv)
-        return sym.decrypt(sym_cipher, data, debug)
+        return sym.decrypt(key, iv, data, debug)
 
 
-def apply_punctured_enc(data, re_enc_length, seed, key, iv, init_val, debug=0):
+def apply_punctured_enc(data, re_enc_length, seed, key, iv, debug=0):
     """
     Apply punctured encryption to the given data: 're_enc_length' bytes are randomly selected using the seed and
     symmetrically encrypted using the given key and iv.
@@ -109,7 +103,6 @@ def apply_punctured_enc(data, re_enc_length, seed, key, iv, init_val, debug=0):
     :param seed: seed to randomly select bytes to re-encrypt
     :param key: symmetric key to encrypt randomly selected bytes
     :param iv: initialisation vector for the symmetric encryption
-    :param init_val: initial value (ONLY FOR CTR MODE)
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: re-encrypted data
     """
@@ -122,8 +115,7 @@ def apply_punctured_enc(data, re_enc_length, seed, key, iv, init_val, debug=0):
         print('INDEX TO RE-ENCRYPT = (%d) %s' % (len(re_enc_indexes), re_enc_indexes))
 
     # Re-encrypt random data bytes
-    sym_cipher = sym.get_cipher(AES.MODE_CTR, init_val, None, key, iv)
-    re_enc_bytes = sym.encrypt(sym_cipher, bytes_to_re_enc, debug)
+    re_enc_bytes = sym.encrypt(key, iv, bytes_to_re_enc, debug)
 
     if debug:  # ONLY USE FOR DEBUG
         print('RE-ENCRYPTED BYTES = (%s) (%d) %s' % (type(re_enc_bytes), len(re_enc_bytes), re_enc_bytes))
@@ -132,7 +124,7 @@ def apply_punctured_enc(data, re_enc_length, seed, key, iv, init_val, debug=0):
     return replace_bytes(data, re_enc_bytes, re_enc_indexes, debug)
 
 
-def remove_punctured_enc(data, re_enc_length, seed, key, iv, init_val, debug=0):
+def remove_punctured_enc(data, re_enc_length, seed, key, iv, debug=0):
     """
     Remove punctured encryption to the given data: 're_enc_length' bytes are randomly selected using the seed and
     symmetrically decrypted using the given key and iv.
@@ -153,8 +145,7 @@ def remove_punctured_enc(data, re_enc_length, seed, key, iv, init_val, debug=0):
         print('INDEX TO RE-DECRYPT = (%d) %s' % (len(re_dec_indexes), re_dec_indexes))
 
     # Decrypt re-encrypted data bytes
-    sym_cipher = sym.get_cipher(AES.MODE_CTR, init_val, None, key, iv)
-    re_dec_bytes = sym.decrypt(sym_cipher, bytes_to_re_dec, debug)
+    re_dec_bytes = sym.decrypt(key, iv, bytes_to_re_dec, debug)
 
     if debug:  # ONLY USE FOR DEBUG
         print('RE-DECRYPTED BYTES = (%s) (%d) %s' % (type(re_dec_bytes), len(re_dec_bytes), re_dec_bytes))
@@ -181,14 +172,14 @@ def get_bytes_to_re_enc(data=None, re_enc_length=None, seed=None, debug=0):
     # Generate a pseudorandom set of indexes to re-encrypt
     re_enc_indexes = ind(seed, re_enc_length, range(len(data)))
 
-    # if debug:  # ONLY USE FOR DEBUG
-        # print('INDEXES =', re_enc_indexes)
+    if debug:  # ONLY USE FOR DEBUG
+        print('INDEXES =', re_enc_indexes)
 
     # Sort indexes to re-encrypt
     re_enc_indexes.sort()
 
-    # if debug:  # ONLY USE FOR DEBUG
-        # print('SORTED INDEXES =', re_enc_indexes)
+    if debug:  # ONLY USE FOR DEBUG
+        print('SORTED INDEXES =', re_enc_indexes)
 
     # Define variables
     bytes_to_re_enc = b''
@@ -237,8 +228,8 @@ def replace_bytes(data=None, new_bytes=None, new_bytes_indexes=None, debug=0):
     # Check if data is set
     if data is None:
         logging.error('replace_re_enc_bytes data exception')
-        # if debug:  # ONLY USE FOR DEBUG
-            # print('EXCEPTION in replace_re_enc_bytes data')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in replace_re_enc_bytes data')
         raise Exception
 
     # Check if new_bytes is set

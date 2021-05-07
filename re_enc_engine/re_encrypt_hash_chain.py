@@ -6,8 +6,9 @@ to the ciphertext with a symmetric key. Then the symmetric key and the seed for 
 with an asymmetric encryption scheme (particularly, CP-ABE).
 """
 
-from binascii import hexlify
+from binascii import hexlify, unhexlify
 from charm.core.engine.util import bytesToObject, objectToBytes
+from charm.toolbox.pairinggroup import GT
 from Crypto.Cipher import AES
 
 import abe_primitives as abe
@@ -23,71 +24,71 @@ import sym_enc_primitives as sym
 import sys
 
 
-def update_re_enc_infos(metafile, re_enc_length, pk, policy, debug=0):
+def update_re_enc_info(metafile, re_enc_params, debug=0):
     """
-    Update re-encryption infos contained in the metadata file adding parameters related to the latest re-encryption
+    Update re-encryption info contained in the metadata file adding parameters related to the latest re-encryption
     operation.
     :param metafile: metadata file where re-encryption parameters will be saved
-    :param re_enc_length: number of bytes to re-encrypt
-    :param pk: public key to encrypt re-encryption parameters
-    :param policy: policy to apply to the encryption
+    :param re_enc_params: re-encryption parameters
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: re-encryption parameters
     """
 
-    # Read metadata and update with new re-encryption infos
+    # Read metadata and update with new re-encryption info
     with open(metafile, 'r+') as f:
         metadata = json.load(f)
 
         # Retrieve re-encryption parameters
         chunk_size = metadata[const.CHUNK_SIZE]
-
-        # Generate re-encryption parameters
-        seed = None
-        seed_pg_elem = None
-        if re_enc_length < chunk_size:
-            seed, seed_pg_elem = pg.random_string_gen(pairing_group, const.SEED_LENGTH)
-        key, key_pg_elem = pg.sym_key_gen(pairing_group, const.SYM_KEY_DEFAULT_SIZE, debug)
-        iv = sym.iv_gen(const.IV_DEFAULT_SIZE, debug)
+        pairing_group = re_enc_params['pairing_group']
+        pk = re_enc_params['pk']
+        policy = re_enc_params['policy']
+        re_enc_length = re_enc_params['re_enc_length']
+        seed = re_enc_params['seed']
+        key = re_enc_params['key']
+        root_iv = re_enc_params['iv']
+        re_encs_num = re_enc_params['re_encs_num']
 
         # Clamp the number of bytes to re-encrypt between RE_ENC_MIN_LENGTH and the chunk size
         re_enc_length = fu.clamp(re_enc_length, const.RE_ENC_MIN_LENGTH, chunk_size, debug)
 
+        iv = fu.hash_chain(root_iv, re_encs_num)
+
         if debug:  # ONLY USE FOR DEBUG
-            print('\nCHUNK SIZE = %d' % chunk_size)
-            if seed:
-                print('SEED = (%d) %s' % (len(seed), seed))
-                print('SEED PG ELEM = (%s) %s' % (type(seed_pg_elem), seed_pg_elem))
-            else:
-                print('SEED =', seed)
-                print('SEED PG ELEM =', seed_pg_elem)
-            print('KEY = (%d) %s' % (len(key), key))
-            print('KEY PG ELEM = (%s) %s' % (type(key_pg_elem), key_pg_elem))
+            print('CHUNK SIZE = %d' % chunk_size)
+            print('SEED = (%s) %s' % (type(seed), seed))
+            print('KEY = (%s) %s' % (type(key), key))
+            print('ROOT_IV = (%d) %s' % (len(root_iv), root_iv))
             print('IV = (%d) %s' % (len(iv), iv))
             print('RE-ENC LEN =', re_enc_length)
+            print('RE-ENC NUM =', re_encs_num)
 
         # Prepare re-encryption parameters to write on the metadata file
-        enc_seed = objectToBytes(abe.encrypt(seed_pg_elem, pairing_group, bytesToObject(pk, pairing_group), policy,
-                                             debug), pairing_group) if seed is not None else seed
-        enc_key = objectToBytes(abe.encrypt(key_pg_elem, pairing_group, bytesToObject(pk, pairing_group), policy,
-                                            debug), pairing_group)
+        enc_seed = objectToBytes(abe.encrypt(seed, pairing_group, bytesToObject(pk, pairing_group), policy, debug),
+                                 pairing_group)
+        enc_key = objectToBytes(abe.encrypt(key, pairing_group, bytesToObject(pk, pairing_group), policy, debug),
+                                pairing_group)
 
         if debug:  # ONLY USE FOR DEBUG
-            if enc_seed:
-                print('ENC SEED = (%d) %s' % (len(enc_seed), enc_seed))
-            else:
-                print('ENC SEED =', enc_seed)
+            print('ENC SEED = (%d) %s' % (len(enc_seed), enc_seed))
             print('ENC KEY = (%d) %s' % (len(enc_key), enc_key))
 
-        # Add re-encryption informations to metadata file
-        metadata['re_encs'].append({
+        # Create re-encryption information
+        re_enc_info = {
             'pk': hashlib.sha256(pk).hexdigest(),  # SHA256 of public key as hex
             'policy': policy,
-            'enc_seed': hexlify(enc_seed).decode() if enc_seed is not None else enc_seed,
+            'enc_seed': hexlify(enc_seed).decode(),
             'enc_key': hexlify(enc_key).decode(),
-            'iv': hexlify(iv).decode(),
-            're_enc_length': re_enc_length
-        })
+            'iv': hexlify(root_iv).decode(),
+            're_enc_length': re_enc_length,
+            're_encs_num': re_encs_num + 1
+        }
+
+        # Add re-encryption informations to metadata file
+        if len(metadata['re_encs']) > 0:
+            metadata['re_encs'][0] = re_enc_info
+        else:
+            metadata['re_encs'].append(re_enc_info)
 
         if debug:  # ONLY USE FOR DEBUG
             print('METADATA =', metadata)
@@ -95,8 +96,10 @@ def update_re_enc_infos(metafile, re_enc_length, pk, policy, debug=0):
         # Overwrite metadata file
         f.seek(0)
         json.dump(metadata, f)
+        f.truncate()
 
-    return seed, key, iv, chunk_size, re_enc_length
+    return objectToBytes(seed, pairing_group)[: const.SEED_LENGTH], \
+           objectToBytes(key, pairing_group)[: const.SYM_KEY_DEFAULT_SIZE], iv, chunk_size, re_enc_length
 
 
 def re_enc_file(file, chunk_size, re_enc_length, seed, key, iv, debug=0):
@@ -148,55 +151,43 @@ def re_enc_file(file, chunk_size, re_enc_length, seed, key, iv, debug=0):
             init_val = f.tell() // enc_block_size
 
 
-def apply_re_encryption(enc_file=None, metadata_enc_file=None, re_enc_length=None, pk=None, policy=None, pairing_group=None, debug=0):
+def apply_re_encryption(enc_file=None, metadata_enc_file=None, re_enc_params=None, debug=0):
     """
     Apply re-encryption to the encrypted ciphertext.
     :param enc_file: encrypted file to re-encrypt
     :param metadata_enc_file: metadata file related to encrypted file
-    :param re_enc_length: number of bytes to re-encrypt
-    :param pk: ABE public key
-    :param policy: ABE policy
-    :param pairing_group: pairing group for parameters generation
+    :param re_enc_params: re-encryption parameters
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     """
 
     # Check if enc_file is set and it exists
     if enc_file is None or not os.path.isfile(enc_file):
         logging.error('apply_re_encryption enc_file exception')
-        # if debug:  # ONLY USE FOR DEBUG
-            # print('EXCEPTION in apply_re_encryption enc_file')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in apply_re_encryption enc_file')
         raise Exception
 
     # Check if metadata_enc_file is set and it exists
     if metadata_enc_file is None or not os.path.isfile(metadata_enc_file):
         logging.error('apply_re_encryption metadata_enc_file exception')
-        # if debug:  # ONLY USE FOR DEBUG
-            # print('EXCEPTION in apply_re_encryption metadata_enc_file')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in apply_re_encryption metadata_enc_file')
         raise Exception
 
-    # Check if re_enc_length is set
-    if re_enc_length is None:
-        logging.error('apply_re_encryption re_enc_length exception')
-        # if debug:  # ONLY USE FOR DEBUG
-            # print('EXCEPTION in apply_re_encryption re_enc_length')
-        raise Exception
-
-    # Check if pk_file is set
-    if pk is None:
-        logging.error('apply_re_encryption pk exception')
-        # if debug:  # ONLY USE FOR DEBUG
-            # print('EXCEPTION in apply_re_encryption pk')
-        raise Exception
-
-    # Check if policy is set
-    if policy is None:
-        logging.error('apply_re_encryption policy exception')
-        # if debug:  # ONLY USE FOR DEBUG
-            # print('EXCEPTION in apply_re_encryption policy')
+    # Check if re_enc_params is set
+    if re_enc_params is None:
+        logging.error('apply_re_encryption re_enc_params exception')
+        if debug:  # ONLY USE FOR DEBUG
+            print('EXCEPTION in apply_re_encryption re_enc_params')
         raise Exception
 
     # Update metadata file with latest re-encryption parameters
-    seed, key, iv, chunk_size, re_enc_length = update_re_enc_infos(metadata_enc_file, re_enc_length, pk, policy, debug)
+    seed, key, iv, chunk_size, re_enc_length = update_re_enc_info(metadata_enc_file, re_enc_params, debug)
+
+    if debug:  # ONLY USE FOR DEBUG
+        print('SEED = (%d) %s' % (len(seed), seed))
+        print('KEY = (%d) %s' % (len(key), key))
+        print('IV = (%d) %s' % (len(iv), iv))
 
     # Re-encrypt the given ciphertext file
     re_enc_file(enc_file, chunk_size, re_enc_length, seed, key, iv, debug)
@@ -204,17 +195,45 @@ def apply_re_encryption(enc_file=None, metadata_enc_file=None, re_enc_length=Non
 
 if __name__ == '__main__':
 
-    # if len(sys.argv) != 6:
-        # print("Syntax: " + sys.argv[0] + " [FILE TO RE-ENCRYPT] [METADATA FILE TO SAVE RE-ENCRYPTION INFOS] "
-        #                                  "[RE-ENC LEN IN BYTES] [PUB KEY FILE] [POLICY]")
+    if len(sys.argv) != 6:
+        print('Syntax:', sys.argv[0], '[FILE TO RE-ENCRYPT] [METADATA FILE TO SAVE RE-ENCRYPTION INFOS] '
+                                      '[RE-ENC LEN IN BYTES] [PUB KEY FILE] [POLICY]')
 
-    script, file, metadata_file, re_enc_len, pub_key_file, policy = sys.argv
+    script, file, metadata_file, re_enc_len, pub_key_file, pol = sys.argv
+    debugging = 1
 
     with open(pub_key_file, 'r') as f:
         data = json.load(f)
+        pub_key = bytes.fromhex(data[next(iter(data.keys()))]['pk'])
 
-    pub_key = bytes.fromhex(data[next(iter(data.keys()))]['pk'])
-    policy = '(DEPT1 and TEAM1)'
-    pairing_group = pg.pairing_group_create('MNT224')
+    with open(metadata_file, 'r') as f:
+        data = json.load(f)
+        re_encs_field = data['re_encs']
+        re_enc_num = 0
+        r_iv = sym.iv_gen(const.IV_DEFAULT_SIZE, debugging)
+        if len(re_encs_field) > 0:
+            re_enc_op = re_encs_field[0]
+            r_iv = unhexlify(re_enc_op['iv'])
+            re_enc_num = re_enc_op['re_encs_num']
 
-    apply_re_encryption(file, metadata_file, int(re_enc_len), pub_key, policy, pairing_group, 1)
+    pol = '(DEPT1 and TEAM1)'
+    pair_group = pg.pairing_group_create('MNT224')
+    last_seed = pg.random_pairing_group_elem_gen(pair_group, GT)
+    last_key = pg.random_pairing_group_elem_gen(pair_group, GT)
+    max_re_enc_num = 100
+
+    initial_re_encs = 1
+    for i in range(initial_re_encs):
+        print('\nHASH CHAIN HOPS =', i, '\t REV HASH CHAIN HOPS =', max_re_enc_num - i)
+        re_enc_args = {
+            'pairing_group': pair_group,
+            'pk': pub_key,
+            'policy': pol,
+            're_enc_length': int(re_enc_len),
+            'seed': pg.hash_chain(pair_group, last_seed, max_re_enc_num - i),
+            'key': pg.hash_chain(pair_group, last_key, max_re_enc_num - i),
+            'iv': r_iv,
+            're_encs_num': i
+        }
+
+        apply_re_encryption(file, metadata_file, re_enc_args, debugging)

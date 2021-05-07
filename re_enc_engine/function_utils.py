@@ -2,16 +2,22 @@
 This file contains all the common basic functions used from the software.
 """
 
+from const import LOG_FILE_PATH, LOG_FILE_NAME
+from datetime import datetime
 
-def generate_random_string(length=None, debug=0):
+import hashlib
+import logging
+import os.path
+import secrets
+
+
+def generate_random_bytes(length=None, debug=0):
     """
     Generate a random byte string with the given length.
     :param length: length in bytes of the string to generate
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     :return: the random bytes string
     """
-
-    import logging
 
     # Check if length is set
     if length is None:
@@ -20,10 +26,8 @@ def generate_random_string(length=None, debug=0):
             print('EXCEPTION in generate_random_string length')
         raise Exception
 
-    import os
-
     # Return a random string with the given length
-    return os.urandom(length)
+    return secrets.token_bytes(length)
 
 
 def clamp(value=None, lower_bound=None, upper_bound=None, debug=0):
@@ -55,9 +59,6 @@ def read_bytes_from_file(infile=None, debug=0):
     :return: read bytes
     """
 
-    import logging
-    import os.path
-
     # Check if infile is set and it exists
     if infile is None or not os.path.isfile(infile):
         logging.error('read_file_bytes infile exception')
@@ -78,8 +79,6 @@ def write_bytes_on_file(outfile=None, data=None, mode='wb', offset=0, debug=0):
     :param offset: file offset
     :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     """
-
-    import logging
 
     # Check if outfile is set
     if outfile is None:
@@ -105,10 +104,8 @@ def clear_folder(folder_path=None, debug=0):
     """
     Delete data files in the specified folder generated from previous executions.
     :param folder_path: directory whose files have to be deleted
+    :param debug: if 1, prints will be shown during execution; default 0, no prints are shown
     """
-
-    import logging
-    import os
 
     # Check if folder_path is set and it exists
     if folder_path is None or not os.path.isdir(folder_path):
@@ -133,11 +130,6 @@ def init_logger():
     Initialise logger
     """
 
-    from re_enc_engine.const import LOG_FILE_PATH, LOG_FILE_NAME
-    from datetime import datetime
-    import logging
-    import os.path
-
     # Create log file directory if it does not exist
     if not os.path.isdir(LOG_FILE_PATH):
         os.mkdir(LOG_FILE_PATH)
@@ -151,3 +143,19 @@ def init_logger():
     # Set logger configuration
     logging.basicConfig(filename=log_file, filemode='a', format='%(asctime)s\t[%(levelname)s] %(name)s : %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+
+
+def hash_chain(start_elem=None, hops_num=0):
+    """
+    Compute the element after the given number of hops using the hash chain by the given starting element.
+    :param start_elem: starting element
+    :param hops_num: number of hash operations to perform
+    :return: the resulting element
+    """
+
+    # Compute the hash chain hops
+    res_elem = start_elem
+    for i in range(hops_num):
+        res_elem = hashlib.sha256(res_elem).digest()
+
+    return res_elem[: len(start_elem)]
